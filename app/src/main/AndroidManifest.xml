@@ -2,6 +2,7 @@
     package="com.rsinkwitz.notif_snd_assist">
 
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <application
         android:allowBackup="true"
         android:label="NotificationSoundAssistant"
