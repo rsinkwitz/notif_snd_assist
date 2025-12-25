@@ -10,6 +10,20 @@
         android:layout_height="wrap_content"
         android:text="Test Dialog"/>
 
+    <Button
+        android:id="@+id/btnSeenApps"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Gesehene Apps anzeigen"
+        android:layout_marginTop="8dp"/>
+
+    <Button
+        android:id="@+id/btnPendingApps"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Offene Benachrichtigungs-Apps"
+        android:layout_marginTop="8dp"/>
+
     <View
         android:layout_width="match_parent"
         android:layout_height="0dp"

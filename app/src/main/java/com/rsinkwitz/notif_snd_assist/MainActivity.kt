@@ -24,6 +24,14 @@ class MainActivity : AppCompatActivity() {
             Log.d("Piepton", "TEST button clicked")
             sendTestNotification()
         }
+        findViewById<Button>(R.id.btnSeenApps).setOnClickListener {
+            val intent = Intent(this, DialogSeenAppsActivity::class.java)
+            startActivity(intent)
+        }
+        findViewById<Button>(R.id.btnPendingApps).setOnClickListener {
+            val intent = Intent(this, PendingAppsActivity::class.java)
+            startActivity(intent)
+        }
     }
 
     private fun checkNotificationListenerPermission() {

@@ -6,11 +6,13 @@ import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
+import android.content.SharedPreferences
 import android.os.Build
 import android.provider.Settings
 import android.service.notification.NotificationListenerService
 import android.service.notification.StatusBarNotification
 import android.util.Log
+import android.widget.Toast
 
 class NotificationMonitorService : NotificationListenerService() {
 
@@ -41,29 +43,24 @@ class NotificationMonitorService : NotificationListenerService() {
     override fun onNotificationPosted(sbn: StatusBarNotification) {
         Log.d("Piepton", "Notification from ${sbn.packageName}")
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val channelId = sbn.notification.channelId
-            val nm = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-            val channel = nm.getNotificationChannel(channelId)
-            if (channel != null) {
-                val soundUri = channel.sound
-                if (soundUri == null || Settings.System.DEFAULT_NOTIFICATION_URI == soundUri) {
-                    // Default-Sound erkannt, öffne Einstellungen
-                    val intent = Intent(Settings.ACTION_CHANNEL_NOTIFICATION_SETTINGS).apply {
-                        putExtra(Settings.EXTRA_APP_PACKAGE, sbn.packageName)
-                        putExtra(Settings.EXTRA_CHANNEL_ID, channelId)
-                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-                    }
-                    startActivity(intent)
-                }
+        val prefs = getSharedPreferences("notif_snd_assist_prefs", Context.MODE_PRIVATE)
+        val seenApps = prefs.getStringSet("seen_apps", mutableSetOf()) ?: mutableSetOf()
+        val lastAppKey = "last_dialog_app"
+        val packageName = sbn.packageName
+        val pendingKey = "pending_apps"
+        val pendingApps = prefs.getStringSet(pendingKey, mutableSetOf()) ?: mutableSetOf()
+
+        if (!seenApps.contains(packageName)) {
+            // App wurde noch nicht behandelt
+            if (!pendingApps.contains(packageName)) {
+                val newPending = pendingApps.toMutableSet()
+                newPending.add(packageName)
+                prefs.edit().putStringSet(pendingKey, newPending).apply()
+                Log.i("Piepton", "Neue App in pending-Liste: $packageName")
             }
-        } else {
-            // Für ältere Android-Versionen: App-Benachrichtigungseinstellungen öffnen
-            val intent = Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).apply {
-                putExtra(Settings.EXTRA_APP_PACKAGE, sbn.packageName)
-                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
-            }
-            startActivity(intent)
+            // Kein automatisches Öffnen mehr!
+            return
         }
+        // ...bisherige Logik für eigene App kann hier noch ergänzt werden...
     }
 }

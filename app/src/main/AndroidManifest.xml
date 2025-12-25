@@ -3,6 +3,8 @@
 
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PROJECTION" />
     <application
         android:allowBackup="true"
         android:label="NotificationSoundAssistant"
@@ -20,6 +22,14 @@
             android:name=".DialogActivity"
             android:exported="true"
             android:theme="@style/Theme.AppCompat.Dialog.Alert"/>
+        <activity
+            android:name=".DialogSeenAppsActivity"
+            android:exported="true"
+            android:theme="@style/Theme.AppCompat.Dialog.Alert"/>
+        <activity
+            android:name=".PendingAppsActivity"
+            android:exported="true"
+            android:theme="@style/Theme.AppCompat.Dialog.Alert"/>
 
         <service
             android:name=".NotificationMonitorService"
@@ -30,6 +40,14 @@
                 <action android:name="android.service.notification.NotificationListenerService" />
             </intent-filter>
         </service>
+
+        <receiver android:name=".BootReceiver"
+                  android:enabled="true"
+                  android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.BOOT_COMPLETED" />
+            </intent-filter>
+        </receiver>
 
     </application>
 </manifest>
