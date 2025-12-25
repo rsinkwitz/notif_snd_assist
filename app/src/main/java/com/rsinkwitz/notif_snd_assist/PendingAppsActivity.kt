@@ -22,6 +22,7 @@ class PendingAppsActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_dialog_seen_apps)
+        setTitle("Offene Benachrichtigungs-Apps")
 
         val prefs = getSharedPreferences(prefsName, Context.MODE_PRIVATE)
         pendingPkgs = (prefs.getStringSet(pendingKey, setOf()) ?: setOf()).toMutableList().sorted().toMutableList()

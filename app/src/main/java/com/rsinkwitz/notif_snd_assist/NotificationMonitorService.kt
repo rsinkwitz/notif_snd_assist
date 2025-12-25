@@ -50,14 +50,12 @@ class NotificationMonitorService : NotificationListenerService() {
         val pendingKey = "pending_apps"
         val pendingApps = prefs.getStringSet(pendingKey, mutableSetOf()) ?: mutableSetOf()
 
-        if (!seenApps.contains(packageName)) {
-            // App wurde noch nicht behandelt
-            if (!pendingApps.contains(packageName)) {
-                val newPending = pendingApps.toMutableSet()
-                newPending.add(packageName)
-                prefs.edit().putStringSet(pendingKey, newPending).apply()
-                Log.i("Piepton", "Neue App in pending-Liste: $packageName")
-            }
+        if (!seenApps.contains(packageName) && !pendingApps.contains(packageName)) {
+            // App wurde noch nicht behandelt und ist nicht in pending
+            val newPending = pendingApps.toMutableSet()
+            newPending.add(packageName)
+            prefs.edit().putStringSet(pendingKey, newPending).apply()
+            Log.i("Piepton", "Neue App in pending-Liste: $packageName")
             // Kein automatisches Öffnen mehr!
             return
         }

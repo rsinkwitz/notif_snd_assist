@@ -1,28 +1,51 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:orientation="vertical" android:layout_width="match_parent"
+    android:orientation="vertical"
+    android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:padding="16dp">
+    android:padding="24dp"
+    android:background="@color/bg_light_gray">
 
-    <Button
-        android:id="@+id/btnTest"
-        android:layout_width="wrap_content"
+    <TextView
+        android:id="@+id/tvTitle"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Test Dialog"/>
-
-    <Button
-        android:id="@+id/btnSeenApps"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Gesehene Apps anzeigen"
-        android:layout_marginTop="8dp"/>
+        android:text="Notification Sound Assistant"
+        android:textSize="24sp"
+        android:textStyle="bold"
+        android:gravity="center"
+        android:layout_marginBottom="24dp"
+        android:textColor="@color/text_gray"/>
 
     <Button
         android:id="@+id/btnPendingApps"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Offene Benachrichtigungs-Apps"
-        android:layout_marginTop="8dp"/>
+        android:layout_width="match_parent"
+        android:layout_height="56dp"
+        android:text="Neue Apps"
+        android:textSize="18sp"
+        android:background="@drawable/rounded_button_green"
+        android:textColor="@android:color/white"
+        android:layout_marginBottom="16dp"/>
+
+    <Button
+        android:id="@+id/btnSeenApps"
+        android:layout_width="match_parent"
+        android:layout_height="56dp"
+        android:text="Gesehene Apps"
+        android:textSize="18sp"
+        android:background="@drawable/rounded_button_blue"
+        android:textColor="@android:color/white"
+        android:layout_marginBottom="12dp"/>
+
+    <Button
+        android:id="@+id/btnTest"
+        android:layout_width="match_parent"
+        android:layout_height="56dp"
+        android:text="Test - Nachricht"
+        android:textSize="18sp"
+        android:background="@drawable/rounded_button_gray"
+        android:textColor="@android:color/white"
+        android:layout_marginBottom="12dp"/>
 
     <View
         android:layout_width="match_parent"
@@ -36,5 +59,6 @@
         android:text="© 2025 R. Sinkwitz"
         android:textSize="12sp"
         android:layout_gravity="center_horizontal"
-        android:paddingTop="8dp"/>
+        android:paddingTop="8dp"
+        android:textColor="@color/text_gray"/>
 </LinearLayout>

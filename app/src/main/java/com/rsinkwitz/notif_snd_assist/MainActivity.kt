@@ -19,6 +19,7 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
+        setTitle("Notification Sound Assistant")
         checkNotificationListenerPermission()
         findViewById<Button>(R.id.btnTest).setOnClickListener {
             Log.d("Piepton", "TEST button clicked")

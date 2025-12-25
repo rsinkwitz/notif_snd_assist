@@ -19,6 +19,7 @@ class DialogSeenAppsActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_dialog_seen_apps)
+        setTitle("Gesehene Apps")
 
         val prefs = getSharedPreferences(prefsName, Context.MODE_PRIVATE)
         val seenAppsPkgs = (prefs.getStringSet(seenAppsKey, setOf()) ?: setOf()).toMutableList().sorted().toMutableList()
