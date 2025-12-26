@@ -41,14 +41,34 @@ class NotificationMonitorService : NotificationListenerService() {
     }
 
     override fun onNotificationPosted(sbn: StatusBarNotification) {
-        Log.d("Piepton", "Notification from ${sbn.packageName}")
+        val packageName = sbn.packageName
+
+        // Hole den Titel der Benachrichtigung
+        val notification = sbn.notification
+        val title = notification?.extras?.getCharSequence(Notification.EXTRA_TITLE)?.toString() ?: ""
+        val text = notification?.extras?.getCharSequence(Notification.EXTRA_TEXT)?.toString() ?: ""
+
+        Log.d("Piepton", "Notification from $packageName, title: '$title', text: '$text'")
+
+        // Filtere unerwünschte Benachrichtigungen heraus
+        if (shouldIgnoreNotification(packageName, title, text)) {
+            Log.d("Piepton", "Benachrichtigung wird ignoriert: $packageName - '$title'")
+            return
+        }
+
+        // Prüfe ob die Benachrichtigung einen Sound hat
+        if (!hasSound(notification, packageName)) {
+            Log.d("Piepton", "Benachrichtigung ohne Sound wird ignoriert: $packageName")
+            return
+        }
 
         val prefs = getSharedPreferences("notif_snd_assist_prefs", Context.MODE_PRIVATE)
         val seenApps = prefs.getStringSet("seen_apps", mutableSetOf()) ?: mutableSetOf()
-        val lastAppKey = "last_dialog_app"
-        val packageName = sbn.packageName
         val pendingKey = "pending_apps"
         val pendingApps = prefs.getStringSet(pendingKey, mutableSetOf()) ?: mutableSetOf()
+
+        // Speichere die Benachrichtigung in der History (letzte 5)
+        saveNotificationToHistory(packageName)
 
         if (!seenApps.contains(packageName) && !pendingApps.contains(packageName)) {
             // App wurde noch nicht behandelt und ist nicht in pending
@@ -60,5 +80,140 @@ class NotificationMonitorService : NotificationListenerService() {
             return
         }
         // ...bisherige Logik für eigene App kann hier noch ergänzt werden...
+    }
+
+    private fun shouldIgnoreNotification(packageName: String, title: String, text: String): Boolean {
+        // Ignoriere eigene App (außer Test-Benachrichtigungen)
+        if (packageName == "com.rsinkwitz.notif_snd_assist") {
+            // Nur Test-Benachrichtigungen durchlassen
+            if (title == "Test Notification") {
+                return false
+            }
+            // Alle anderen Benachrichtigungen der eigenen App ignorieren (z.B. Foreground Service)
+            return true
+        }
+
+        // Ignoriere System-UI Benachrichtigungen
+        if (packageName == "com.android.systemui") {
+            return true
+        }
+
+        // Ignoriere System-Packages
+        val ignoredPackages = listOf(
+            "android",
+            "com.android.system"
+        )
+        if (ignoredPackages.contains(packageName)) {
+            return true
+        }
+
+        // Ignoriere Benachrichtigungen mit bestimmten Titeln
+        val ignoredTitles = listOf(
+            "Oberfläche",
+            "Surface",
+            "Bildschirmaufnahme",
+            "Screen recording",
+            "Bildschirm wird übertragen",
+            "Screen is being cast",
+            "Android System",
+            "läuft" // z.B. "NotificationSoundAssistant läuft"
+        )
+
+        for (ignoredTitle in ignoredTitles) {
+            if (title.contains(ignoredTitle, ignoreCase = true) || text.contains(ignoredTitle, ignoreCase = true)) {
+                return true
+            }
+        }
+
+        return false
+    }
+
+    private fun hasSound(notification: Notification?, packageName: String): Boolean {
+        if (notification == null) {
+            Log.d("Piepton", "Notification ist null")
+            return false
+        }
+
+        // Prüfe explizite Sound-Einstellungen
+        val defaults = notification.defaults
+        val hasExplicitSound = notification.sound != null
+        val hasDefaultSound = (defaults and Notification.DEFAULT_SOUND) != 0
+
+        // Wenn explizit ein Sound gesetzt ist, dann hat die Benachrichtigung Sound
+        if (hasExplicitSound || hasDefaultSound) {
+            Log.d("Piepton", "Benachrichtigung hat expliziten Sound: $packageName")
+            return true
+        }
+
+        // Ab Android O: Prüfe den NotificationChannel
+        // WICHTIG: Wir können nur Channels der eigenen App lesen!
+        // Für fremde Apps nehmen wir an, dass sie Sound haben, wenn ein channelId vorhanden ist
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val channelId = notification.channelId
+
+            // Wenn kein Channel angegeben ist, hat die Benachrichtigung wahrscheinlich keinen Sound
+            if (channelId == null) {
+                Log.d("Piepton", "Kein ChannelId vorhanden für $packageName")
+                return false
+            }
+
+            // Für fremde Apps können wir den Channel nicht lesen
+            // Wenn die Benachrichtigung gesendet wurde und einen channelId hat, nehmen wir an, dass sie Sound hat
+            Log.d("Piepton", "Benachrichtigung von fremder App (Channel nicht lesbar), nehme Sound an: $packageName")
+            return true
+        }
+
+        // Vor Android O: Keine Channel-Unterstützung
+        // Wenn weder Sound noch Default-Sound gesetzt ist, hat die Benachrichtigung keinen Sound
+        Log.d("Piepton", "Keine Sound-Konfiguration gefunden für $packageName (pre-O)")
+        return false
+    }
+
+    private fun saveNotificationToHistory(packageName: String) {
+        val prefs = getSharedPreferences("notif_snd_assist_prefs", Context.MODE_PRIVATE)
+        val historyKey = "notification_history"
+        val historyJson = prefs.getString(historyKey, "[]")
+
+        // Parse JSON array
+        val history = try {
+            org.json.JSONArray(historyJson)
+        } catch (e: Exception) {
+            org.json.JSONArray()
+        }
+
+        // Füge neue Benachrichtigung hinzu
+        val newEntry = org.json.JSONObject()
+        newEntry.put("packageName", packageName)
+        newEntry.put("timestamp", System.currentTimeMillis())
+
+        // Erstelle neue History und füge den neuen Eintrag am Anfang hinzu
+        val newHistory = org.json.JSONArray()
+        newHistory.put(newEntry)
+
+        // Kopiere die alten Einträge (maximal 4, damit wir insgesamt 5 haben)
+        // Überspringe dabei Einträge mit demselben packageName (um Duplikate zu vermeiden)
+        var count = 0
+        for (i in 0 until history.length()) {
+            if (count >= 4) break
+
+            val oldEntry = history.getJSONObject(i)
+            val oldPackageName = oldEntry.getString("packageName")
+
+            // Überspringe Einträge mit demselben packageName
+            if (oldPackageName != packageName) {
+                newHistory.put(oldEntry)
+                count++
+            }
+        }
+
+        // Speichere zurück
+        prefs.edit().putString(historyKey, newHistory.toString()).apply()
+
+        Log.d("Piepton", "History aktualisiert: $packageName an Position 0, ${newHistory.length()} Einträge insgesamt")
+
+        // Sende Broadcast um MainActivity zu informieren
+        val intent = Intent("com.rsinkwitz.notif_snd_assist.NEW_NOTIFICATION")
+        sendBroadcast(intent)
+        Log.d("Piepton", "Broadcast gesendet für neue Benachrichtigung von $packageName")
     }
 }

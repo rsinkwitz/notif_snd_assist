@@ -22,17 +22,31 @@ class PendingAppsActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_dialog_seen_apps)
-        setTitle("Offene Benachrichtigungs-Apps")
+        setTitle("Configure App")
 
         val prefs = getSharedPreferences(prefsName, Context.MODE_PRIVATE)
-        pendingPkgs = (prefs.getStringSet(pendingKey, setOf()) ?: setOf()).toMutableList().sorted().toMutableList()
+        val allPending = (prefs.getStringSet(pendingKey, setOf()) ?: setOf()).toMutableList()
+
+        // Filtere unerwünschte Apps heraus (z.B. com.android.systemui)
+        val filtered = allPending.filter { pkg -> !shouldFilterPackage(pkg) }.sorted()
+
+        // Wenn gefilterte Apps gefunden wurden, aktualisiere die SharedPreferences
+        if (filtered.size < allPending.size) {
+            prefs.edit().putStringSet(pendingKey, filtered.toSet()).apply()
+        }
+
+        pendingPkgs = filtered.toMutableList()
         val pm = packageManager
         pendingLabels = pendingPkgs.map { pkg ->
             try {
-                val appInfo = pm.getApplicationInfo(pkg, 0)
-                pm.getApplicationLabel(appInfo).toString()
-            } catch (e: PackageManager.NameNotFoundException) {
-                pkg
+                @Suppress("DEPRECATION")
+                val appInfo = pm.getApplicationInfo(pkg, PackageManager.MATCH_UNINSTALLED_PACKAGES)
+                val label = pm.getApplicationLabel(appInfo).toString()
+                android.util.Log.d("Piepton", "App-Name für $pkg: $label")
+                label
+            } catch (e: Exception) {
+                android.util.Log.w("Piepton", "App nicht gefunden, verwende formatierten Namen für $pkg")
+                formatPackageName(pkg)
             }
         }.toMutableList()
         adapter = ArrayAdapter(this, android.R.layout.simple_list_item_1, pendingLabels)
@@ -67,18 +81,18 @@ class PendingAppsActivity : AppCompatActivity() {
 
         findViewById<Button>(R.id.btnClearAll).setOnClickListener {
             AlertDialog.Builder(this)
-                .setTitle("Alle entfernen?")
-                .setMessage("Wirklich alle offenen Apps als erledigt markieren?")
-                .setPositiveButton("Ja") { _, _ ->
+                .setTitle("Clear list?")
+                .setMessage("Really clear list?")
+                .setPositiveButton("Yes") { _, _ ->
                     val seen = prefs.getStringSet(seenKey, setOf())?.toMutableSet() ?: mutableSetOf()
                     seen.addAll(pendingPkgs)
                     prefs.edit().putStringSet(seenKey, seen).putStringSet(pendingKey, setOf()).apply()
                     pendingPkgs.clear()
                     pendingLabels.clear()
                     adapter.notifyDataSetChanged()
-                    Toast.makeText(this, "Alle als erledigt markiert", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this, "Pending app list cleared", Toast.LENGTH_SHORT).show()
                 }
-                .setNegativeButton("Abbrechen", null)
+                .setNegativeButton("Cancel", null)
                 .show()
         }
     }
@@ -89,6 +103,37 @@ class PendingAppsActivity : AppCompatActivity() {
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         }
         startActivity(intent)
-        Toast.makeText(this, "Wähle dort 'Benachrichtigungen' und dann die passende Kategorie, um den Sound zu ändern.", Toast.LENGTH_LONG).show()
+        Toast.makeText(this, "To change sound, select 'Notifications', then 'categories'", Toast.LENGTH_LONG).show()
+    }
+
+    private fun shouldFilterPackage(packageName: String): Boolean {
+        // Filtere System-UI und andere unerwünschte Apps
+        val ignoredPackages = listOf(
+            "com.android.systemui",
+            "android",
+            "com.android.system"
+        )
+        return ignoredPackages.contains(packageName)
+    }
+
+    private fun formatPackageName(packageName: String): String {
+        // Extrahiere den letzten Teil des Package-Namens und mache ihn lesbar
+        return when {
+            packageName.contains("yahoo") && packageName.contains("mail") -> "Yahoo Mail"
+            packageName.contains("whatsapp") -> "WhatsApp"
+            packageName.contains("gmail") -> "Gmail"
+            packageName.contains("facebook") -> "Facebook"
+            packageName.contains("instagram") -> "Instagram"
+            packageName.contains("twitter") -> "Twitter"
+            packageName.contains("telegram") -> "Telegram"
+            packageName.contains("signal") -> "Signal"
+            packageName.contains("messenger") -> "Messenger"
+            else -> {
+                // Fallback: Nimm den letzten Teil nach dem letzten Punkt und kapitalisiere
+                val parts = packageName.split(".")
+                val lastPart = parts.lastOrNull() ?: packageName
+                lastPart.replaceFirstChar { it.uppercase() }
+            }
+        }
     }
 }
