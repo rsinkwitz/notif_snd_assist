@@ -22,7 +22,7 @@ class PendingAppsActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_dialog_seen_apps)
-        setTitle("Neue Apps")
+        setTitle(R.string.pending_apps_title)
 
         val prefs = getSharedPreferences(prefsName, Context.MODE_PRIVATE)
         val allPending = (prefs.getStringSet(pendingKey, setOf()) ?: setOf()).toMutableList()
@@ -48,9 +48,9 @@ class PendingAppsActivity : AppCompatActivity() {
             val pkg = pendingPkgs[position]
             val appLabel = pendingLabels[position].substringBefore('\n')
             AlertDialog.Builder(this)
-                .setTitle("Einstellungen öffnen?")
-                .setMessage("Benachrichtigungs-Einstellungen für $appLabel öffnen?")
-                .setPositiveButton("Öffnen") { _, _ ->
+                .setTitle(R.string.dialog_open_settings)
+                .setMessage(getString(R.string.dialog_open_settings_message, appLabel))
+                .setPositiveButton(R.string.dialog_open_settings) { _, _ ->
                     openAppSettings(pkg)
                     // Nach Öffnen als "gesehen" markieren und aus pending entfernen
                     val prefsEdit = prefs.edit()
@@ -64,9 +64,9 @@ class PendingAppsActivity : AppCompatActivity() {
                     pendingPkgs.removeAt(position)
                     pendingLabels.removeAt(position)
                     adapter.notifyDataSetChanged()
-                    Toast.makeText(this, "$appLabel wurde als erledigt markiert", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this, getString(R.string.toast_marked_as_done, appLabel), Toast.LENGTH_SHORT).show()
                 }
-                .setNegativeButton("Abbrechen", null)
+                .setNegativeButton(R.string.btn_cancel, null)
                 .show()
         }
 
@@ -76,21 +76,21 @@ class PendingAppsActivity : AppCompatActivity() {
         // Nur "Alle löschen" Button
         findViewById<Button>(R.id.btnRemoveAll).setOnClickListener {
             if (pendingPkgs.isEmpty()) {
-                Toast.makeText(this, "Keine Apps vorhanden", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, R.string.toast_no_apps_available, Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
 
             AlertDialog.Builder(this)
-                .setTitle("Alle löschen?")
-                .setMessage("Wirklich alle ${pendingPkgs.size} App(s) komplett löschen?")
-                .setPositiveButton("Ja") { _, _ ->
+                .setTitle(R.string.dialog_delete_all_title)
+                .setMessage(getString(R.string.dialog_delete_all_message, pendingPkgs.size))
+                .setPositiveButton(R.string.btn_yes) { _, _ ->
                     prefs.edit().putStringSet(pendingKey, setOf()).apply()
                     pendingPkgs.clear()
                     pendingLabels.clear()
                     adapter.notifyDataSetChanged()
-                    Toast.makeText(this, "Alle Apps wurden gelöscht", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this, R.string.toast_all_apps_deleted, Toast.LENGTH_SHORT).show()
                 }
-                .setNegativeButton("Abbrechen", null)
+                .setNegativeButton(R.string.btn_cancel, null)
                 .show()
         }
     }
@@ -101,7 +101,7 @@ class PendingAppsActivity : AppCompatActivity() {
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         }
         startActivity(intent)
-        Toast.makeText(this, "Wähle 'Benachrichtigungen' und dann die passende Kategorie, um den Ton zu ändern.", Toast.LENGTH_LONG).show()
+        Toast.makeText(this, R.string.toast_choose_notification_category, Toast.LENGTH_LONG).show()
     }
 
     private fun shouldFilterPackage(packageName: String): Boolean {

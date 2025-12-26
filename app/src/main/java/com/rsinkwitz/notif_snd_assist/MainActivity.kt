@@ -36,7 +36,7 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
-        setTitle("Ton-Assistent")
+        setTitle(R.string.main_title)
         checkNotificationListenerPermission()
 
         // RecyclerView initialisieren
@@ -132,9 +132,10 @@ class MainActivity : AppCompatActivity() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val channel = NotificationChannel(
                 channelId,
-                "Test-Kanal",
+                getString(R.string.test_channel_name),
                 NotificationManager.IMPORTANCE_HIGH
             )
+            channel.description = getString(R.string.test_channel_description)
             // Default-Sound explizit setzen
             channel.setSound(android.provider.Settings.System.DEFAULT_NOTIFICATION_URI, null)
             nm.createNotificationChannel(channel)
@@ -142,14 +143,14 @@ class MainActivity : AppCompatActivity() {
 
         val notification = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             Notification.Builder(this, channelId)
-                .setContentTitle("Test-Benachrichtigung")
-                .setContentText("Dies ist eine Test-Benachrichtigung")
+                .setContentTitle(getString(R.string.test_notification_title))
+                .setContentText(getString(R.string.test_notification_text))
                 .setSmallIcon(android.R.drawable.ic_dialog_info)
                 .build()
         } else {
             Notification.Builder(this)
-                .setContentTitle("Test-Benachrichtigung")
-                .setContentText("Dies ist eine Test-Benachrichtigung")
+                .setContentTitle(getString(R.string.test_notification_title))
+                .setContentText(getString(R.string.test_notification_text))
                 .setSmallIcon(android.R.drawable.ic_dialog_info)
                 .build()
         }

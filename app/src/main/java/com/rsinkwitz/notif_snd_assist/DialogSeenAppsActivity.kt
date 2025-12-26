@@ -20,7 +20,7 @@ class DialogSeenAppsActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_dialog_seen_apps)
-        setTitle("Gesehene Apps")
+        setTitle(R.string.seen_apps_title)
 
         val prefs = getSharedPreferences(prefsName, Context.MODE_PRIVATE)
         val allSeenApps = (prefs.getStringSet(seenAppsKey, setOf()) ?: setOf()).toMutableList()
@@ -50,9 +50,9 @@ class DialogSeenAppsActivity : AppCompatActivity() {
 
             // Zeige Dialog mit drei Optionen: Als neu markieren, Entfernen, Abbrechen
             AlertDialog.Builder(this)
-                .setTitle("Optionen für $appLabel")
-                .setMessage("Was möchten Sie tun?")
-                .setPositiveButton("Als neu markieren") { _, _ ->
+                .setTitle(getString(R.string.dialog_action_for_app, appLabel))
+                .setMessage(getString(R.string.dialog_action_for_app, appLabel))
+                .setPositiveButton(R.string.btn_mark_as_new) { _, _ ->
                     // Verschiebe von "seen" zu "pending"
                     seenAppsPkgs.removeAt(position)
                     prefs.edit().putStringSet(seenAppsKey, seenAppsPkgs.toSet()).apply()
@@ -63,32 +63,32 @@ class DialogSeenAppsActivity : AppCompatActivity() {
 
                     seenApps.removeAt(position)
                     adapter.notifyDataSetChanged()
-                    Toast.makeText(this, "$appLabel wurde als neu markiert", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this, getString(R.string.toast_marked_as_new, appLabel), Toast.LENGTH_SHORT).show()
                 }
-                .setNegativeButton("Entfernen") { _, _ ->
+                .setNegativeButton(R.string.btn_remove) { _, _ ->
                     // Entferne aus "seen" ohne zu "pending" zu verschieben
                     seenAppsPkgs.removeAt(position)
                     prefs.edit().putStringSet(seenAppsKey, seenAppsPkgs.toSet()).apply()
 
                     seenApps.removeAt(position)
                     adapter.notifyDataSetChanged()
-                    Toast.makeText(this, "$appLabel wurde entfernt", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this, getString(R.string.toast_removed, appLabel), Toast.LENGTH_SHORT).show()
                 }
-                .setNeutralButton("Abbrechen", null)
+                .setNeutralButton(R.string.btn_cancel, null)
                 .show()
         }
 
         findViewById<Button>(R.id.btnMarkAllAsNew).setOnClickListener {
             // Verschiebe alle Apps zu "Neue Apps"
             if (seenAppsPkgs.isEmpty()) {
-                Toast.makeText(this, "Keine Apps vorhanden", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, R.string.toast_no_apps_available, Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
 
             AlertDialog.Builder(this)
-                .setTitle("Alle als neu markieren?")
-                .setMessage("Wirklich alle ${seenAppsPkgs.size} App(s) zurück zu 'Neue Apps' verschieben?")
-                .setPositiveButton("Ja") { _, _ ->
+                .setTitle(R.string.dialog_mark_all_as_new_title)
+                .setMessage(getString(R.string.dialog_mark_all_as_new_message, seenAppsPkgs.size))
+                .setPositiveButton(R.string.btn_yes) { _, _ ->
                     val pendingApps = prefs.getStringSet(pendingKey, setOf())?.toMutableSet() ?: mutableSetOf()
                     pendingApps.addAll(seenAppsPkgs)
                     prefs.edit()
@@ -99,31 +99,31 @@ class DialogSeenAppsActivity : AppCompatActivity() {
                     seenAppsPkgs.clear()
                     seenApps.clear()
                     adapter.notifyDataSetChanged()
-                    Toast.makeText(this, "Alle Apps wurden als neu markiert", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this, R.string.toast_all_marked_as_new, Toast.LENGTH_SHORT).show()
                 }
-                .setNegativeButton("Abbrechen", null)
+                .setNegativeButton(R.string.btn_cancel, null)
                 .show()
         }
 
         findViewById<Button>(R.id.btnRemoveAll).setOnClickListener {
             // Entferne alle Apps komplett
             if (seenAppsPkgs.isEmpty()) {
-                Toast.makeText(this, "Keine Apps vorhanden", Toast.LENGTH_SHORT).show()
+                Toast.makeText(this, R.string.toast_no_apps_available, Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
 
             AlertDialog.Builder(this)
-                .setTitle("Alle löschen?")
-                .setMessage("Wirklich alle ${seenAppsPkgs.size} App(s) komplett löschen?")
-                .setPositiveButton("Ja") { _, _ ->
+                .setTitle(R.string.dialog_delete_all_title)
+                .setMessage(getString(R.string.dialog_delete_all_message, seenAppsPkgs.size))
+                .setPositiveButton(R.string.btn_yes) { _, _ ->
                     prefs.edit().putStringSet(seenAppsKey, setOf()).apply()
 
                     seenAppsPkgs.clear()
                     seenApps.clear()
                     adapter.notifyDataSetChanged()
-                    Toast.makeText(this, "Alle Apps wurden gelöscht", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this, R.string.toast_all_apps_deleted, Toast.LENGTH_SHORT).show()
                 }
-                .setNegativeButton("Abbrechen", null)
+                .setNegativeButton(R.string.btn_cancel, null)
                 .show()
         }
     }

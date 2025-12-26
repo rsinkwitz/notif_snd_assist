@@ -17,7 +17,7 @@
         android:id="@+id/btnMarkAllAsNew"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Alle als neu markieren"
+        android:text="@string/btn_mark_all_as_new"
         android:layout_marginTop="8dp"
         android:background="@drawable/rounded_button_green"
         android:textColor="@android:color/white"/>
@@ -26,7 +26,7 @@
         android:id="@+id/btnRemoveAll"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Alle löschen"
+        android:text="@string/btn_delete_all"
         android:layout_marginTop="8dp"
         android:background="@drawable/rounded_button_gray"
         android:textColor="@android:color/white"/>

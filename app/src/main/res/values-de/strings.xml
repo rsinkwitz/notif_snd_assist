@@ -1,0 +1,58 @@
+<resources>
+    <string name="app_name">TonAssistent</string>
+
+    <!-- Main Activity -->
+    <string name="main_title">Ton-Assistent</string>
+    <string name="btn_new_apps">Neue Apps</string>
+    <string name="btn_seen_apps">Gesehene Apps</string>
+    <string name="btn_test_notification">Test-Benachrichtigung</string>
+    <string name="recent_notifications_title">Letzte 5 Benachrichtigungen</string>
+    <string name="copyright">© 2025 R. Sinkwitz</string>
+
+    <!-- Notification History -->
+    <string name="time_format_seconds">vor %d Sek</string>
+    <string name="time_format_minutes" formatted="false">vor %d:%02d Min</string>
+
+    <!-- Pending Apps Activity -->
+    <string name="pending_apps_title">Neue Apps</string>
+    <string name="dialog_open_settings">Einstellungen öffnen?</string>
+    <string name="dialog_open_settings_message">Benachrichtigungseinstellungen für \'%s\' öffnen?</string>
+    <string name="btn_yes">Ja</string>
+    <string name="btn_cancel">Abbrechen</string>
+    <string name="toast_marked_as_done">\'%s\' wurde als erledigt markiert</string>
+    <string name="toast_choose_notification_category">Wähle \'Benachrichtigungen\' und dann die passende Kategorie, um den Ton zu ändern.</string>
+    <string name="btn_delete_all">Alle löschen</string>
+    <string name="dialog_delete_all_title">Alle löschen?</string>
+    <string name="dialog_delete_all_message">Wirklich alle %d App(s) komplett löschen?</string>
+    <string name="toast_no_apps_available">Keine Apps vorhanden</string>
+    <string name="toast_all_apps_deleted">Alle Apps wurden gelöscht</string>
+
+    <!-- Seen Apps Activity -->
+    <string name="seen_apps_title">Gesehene Apps</string>
+    <string name="dialog_action_for_app">Aktion für \'%s\'?</string>
+    <string name="btn_mark_as_new">Als neu markieren</string>
+    <string name="btn_remove">Entfernen</string>
+    <string name="toast_marked_as_new">\'%s\' wurde als neu markiert</string>
+    <string name="toast_removed">\'%s\' wurde entfernt</string>
+    <string name="btn_mark_all_as_new">Alle als neu markieren</string>
+    <string name="btn_remove_all">Alle löschen</string>
+    <string name="dialog_mark_all_as_new_title">Alle als neu markieren?</string>
+    <string name="dialog_mark_all_as_new_message">Wirklich alle %d App(s) zurück zu \'Neue Apps\' verschieben?</string>
+    <string name="toast_all_marked_as_new">Alle Apps wurden als neu markiert</string>
+
+    <!-- Notification Listener Service -->
+    <string name="notification_from">Notification from %s</string>
+    <string name="notification_title_text">title: \'%1$s\', text: \'%2$s\'</string>
+    <string name="channel_not_found">Channel \'%s\' nicht gefunden</string>
+    <string name="no_sound_config_found">Keine Sound-Konfiguration gefunden für %s</string>
+    <string name="notification_without_sound_ignored">Benachrichtigung ohne Sound wird ignoriert: %s</string>
+    <string name="notification_only_alert_once">Benachrichtigung ist als \'only alert once\' markiert: %s</string>
+    <string name="notification_channel_found">NotificationChannel for id \'%s\': found</string>
+
+    <!-- Test Notification -->
+    <string name="test_notification_title">Test</string>
+    <string name="test_notification_text">Test-Benachrichtigung</string>
+    <string name="test_channel_name">Test Channel</string>
+    <string name="test_channel_description">Channel für Test-Benachrichtigungen</string>
+</resources>
+

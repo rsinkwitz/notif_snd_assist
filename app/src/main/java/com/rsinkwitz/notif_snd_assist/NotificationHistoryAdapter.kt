@@ -46,8 +46,8 @@ class NotificationHistoryAdapter(
         val minutes = seconds / 60
 
         val timeText = when {
-            minutes > 0 -> String.format("vor %d:%02d min", minutes, seconds % 60)
-            else -> String.format("vor %d sec", seconds)
+            minutes > 0 -> context.getString(R.string.time_format_minutes, minutes, seconds % 60)
+            else -> context.getString(R.string.time_format_seconds, seconds)
         }
 
         holder.tvTimestamp.text = timeText
