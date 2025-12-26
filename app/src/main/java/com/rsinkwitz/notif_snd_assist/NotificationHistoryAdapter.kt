@@ -36,18 +36,7 @@ class NotificationHistoryAdapter(
 
         // App-Name ermitteln
         val pm = context.packageManager
-        val appName = try {
-            @Suppress("DEPRECATION")
-            val appInfo = pm.getApplicationInfo(item.packageName, PackageManager.MATCH_UNINSTALLED_PACKAGES)
-            val label = pm.getApplicationLabel(appInfo).toString()
-            android.util.Log.d("Piepton", "App-Name für ${item.packageName}: $label")
-            label
-        } catch (e: Exception) {
-            android.util.Log.w("Piepton", "App nicht gefunden, verwende formatierten Namen für ${item.packageName}")
-            // Verwende formatierten Package-Namen statt des rohen Package-Namens
-            formatPackageName(item.packageName)
-        }
-
+        val appName = getAppLabel(pm, item.packageName)
         holder.tvAppName.text = appName
 
         // Zeitdifferenz berechnen
@@ -73,6 +62,41 @@ class NotificationHistoryAdapter(
     }
 
     override fun getItemCount() = items.size
+
+    private fun getAppLabel(pm: android.content.pm.PackageManager, pkg: String): String {
+        // Strategie 1: Versuche getPackageInfo
+        try {
+            @Suppress("DEPRECATION")
+            val packageInfo = pm.getPackageInfo(pkg, 0)
+            return pm.getApplicationLabel(packageInfo.applicationInfo).toString()
+        } catch (e: Exception) {
+            // Weiter zur nächsten Strategie
+        }
+
+        // Strategie 2: Versuche über alle installierten Packages zu iterieren
+        try {
+            @Suppress("DEPRECATION")
+            val installedApps = pm.getInstalledApplications(0)
+            val appInfo = installedApps.find { it.packageName == pkg }
+            if (appInfo != null) {
+                return pm.getApplicationLabel(appInfo).toString()
+            }
+        } catch (e: Exception) {
+            // Weiter zur nächsten Strategie
+        }
+
+        // Strategie 3: Versuche mit MATCH_UNINSTALLED_PACKAGES
+        try {
+            @Suppress("DEPRECATION")
+            val packageInfo = pm.getPackageInfo(pkg, android.content.pm.PackageManager.MATCH_UNINSTALLED_PACKAGES)
+            return pm.getApplicationLabel(packageInfo.applicationInfo).toString()
+        } catch (e: Exception) {
+            // Alle Strategien fehlgeschlagen
+        }
+
+        // Fallback: Formatiere den Package-Namen
+        return formatPackageName(pkg)
+    }
 
     private fun formatPackageName(packageName: String): String {
         // Extrahiere den letzten Teil des Package-Namens und mache ihn lesbar

@@ -24,14 +24,14 @@ class NotificationMonitorService : NotificationListenerService() {
     private fun startForegroundServiceCompat() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val channelId = "notif_snd_assist_service"
-            val channelName = "NotificationSoundAssistant Service"
+            val channelName = "Benachrichtigungston-Assistent Dienst"
             val nm = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
             if (nm.getNotificationChannel(channelId) == null) {
                 val channel = NotificationChannel(channelId, channelName, NotificationManager.IMPORTANCE_LOW)
                 nm.createNotificationChannel(channel)
             }
             val notification = Notification.Builder(this, channelId)
-                .setContentTitle("NotificationSoundAssistant läuft")
+                .setContentTitle("Benachrichtigungston-Assistent läuft")
                 .setContentText("Benachrichtigungen werden überwacht")
                 .setSmallIcon(R.drawable.ic_notification)
                 .setContentIntent(PendingIntent.getActivity(this, 0, Intent(this, MainActivity::class.java), PendingIntent.FLAG_IMMUTABLE))
@@ -86,7 +86,7 @@ class NotificationMonitorService : NotificationListenerService() {
         // Ignoriere eigene App (außer Test-Benachrichtigungen)
         if (packageName == "com.rsinkwitz.notif_snd_assist") {
             // Nur Test-Benachrichtigungen durchlassen
-            if (title == "Test Notification") {
+            if (title == "Test-Benachrichtigung") {
                 return false
             }
             // Alle anderen Benachrichtigungen der eigenen App ignorieren (z.B. Foreground Service)
@@ -116,7 +116,7 @@ class NotificationMonitorService : NotificationListenerService() {
             "Bildschirm wird übertragen",
             "Screen is being cast",
             "Android System",
-            "läuft" // z.B. "NotificationSoundAssistant läuft"
+            "läuft" // z.B. "TonAssistent läuft"
         )
 
         for (ignoredTitle in ignoredTitles) {

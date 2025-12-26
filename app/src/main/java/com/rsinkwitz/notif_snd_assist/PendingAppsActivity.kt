@@ -22,7 +22,7 @@ class PendingAppsActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_dialog_seen_apps)
-        setTitle("Configure App")
+        setTitle("Neue Apps")
 
         val prefs = getSharedPreferences(prefsName, Context.MODE_PRIVATE)
         val allPending = (prefs.getStringSet(pendingKey, setOf()) ?: setOf()).toMutableList()
@@ -38,16 +38,7 @@ class PendingAppsActivity : AppCompatActivity() {
         pendingPkgs = filtered.toMutableList()
         val pm = packageManager
         pendingLabels = pendingPkgs.map { pkg ->
-            try {
-                @Suppress("DEPRECATION")
-                val appInfo = pm.getApplicationInfo(pkg, PackageManager.MATCH_UNINSTALLED_PACKAGES)
-                val label = pm.getApplicationLabel(appInfo).toString()
-                android.util.Log.d("Piepton", "App-Name für $pkg: $label")
-                label
-            } catch (e: Exception) {
-                android.util.Log.w("Piepton", "App nicht gefunden, verwende formatierten Namen für $pkg")
-                formatPackageName(pkg)
-            }
+            getAppLabel(pm, pkg)
         }.toMutableList()
         adapter = ArrayAdapter(this, android.R.layout.simple_list_item_1, pendingLabels)
         val listView = findViewById<ListView>(R.id.listSeenApps)
@@ -58,7 +49,7 @@ class PendingAppsActivity : AppCompatActivity() {
             val appLabel = pendingLabels[position].substringBefore('\n')
             AlertDialog.Builder(this)
                 .setTitle("Einstellungen öffnen?")
-                .setMessage("Sound-Einstellungen für $appLabel öffnen?")
+                .setMessage("Benachrichtigungs-Einstellungen für $appLabel öffnen?")
                 .setPositiveButton("Öffnen") { _, _ ->
                     openAppSettings(pkg)
                     // Nach Öffnen als "gesehen" markieren und aus pending entfernen
@@ -73,26 +64,33 @@ class PendingAppsActivity : AppCompatActivity() {
                     pendingPkgs.removeAt(position)
                     pendingLabels.removeAt(position)
                     adapter.notifyDataSetChanged()
-                    Toast.makeText(this, "$appLabel als erledigt markiert", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this, "$appLabel wurde als erledigt markiert", Toast.LENGTH_SHORT).show()
                 }
                 .setNegativeButton("Abbrechen", null)
                 .show()
         }
 
-        findViewById<Button>(R.id.btnClearAll).setOnClickListener {
+        // Blende "Alle als neu markieren" aus - macht für "Neue Apps" keinen Sinn
+        findViewById<Button>(R.id.btnMarkAllAsNew).visibility = android.view.View.GONE
+
+        // Nur "Alle löschen" Button
+        findViewById<Button>(R.id.btnRemoveAll).setOnClickListener {
+            if (pendingPkgs.isEmpty()) {
+                Toast.makeText(this, "Keine Apps vorhanden", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+
             AlertDialog.Builder(this)
-                .setTitle("Clear list?")
-                .setMessage("Really clear list?")
-                .setPositiveButton("Yes") { _, _ ->
-                    val seen = prefs.getStringSet(seenKey, setOf())?.toMutableSet() ?: mutableSetOf()
-                    seen.addAll(pendingPkgs)
-                    prefs.edit().putStringSet(seenKey, seen).putStringSet(pendingKey, setOf()).apply()
+                .setTitle("Alle löschen?")
+                .setMessage("Wirklich alle ${pendingPkgs.size} App(s) komplett löschen?")
+                .setPositiveButton("Ja") { _, _ ->
+                    prefs.edit().putStringSet(pendingKey, setOf()).apply()
                     pendingPkgs.clear()
                     pendingLabels.clear()
                     adapter.notifyDataSetChanged()
-                    Toast.makeText(this, "Pending app list cleared", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this, "Alle Apps wurden gelöscht", Toast.LENGTH_SHORT).show()
                 }
-                .setNegativeButton("Cancel", null)
+                .setNegativeButton("Abbrechen", null)
                 .show()
         }
     }
@@ -103,7 +101,7 @@ class PendingAppsActivity : AppCompatActivity() {
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         }
         startActivity(intent)
-        Toast.makeText(this, "To change sound, select 'Notifications', then 'categories'", Toast.LENGTH_LONG).show()
+        Toast.makeText(this, "Wähle 'Benachrichtigungen' und dann die passende Kategorie, um den Ton zu ändern.", Toast.LENGTH_LONG).show()
     }
 
     private fun shouldFilterPackage(packageName: String): Boolean {
@@ -114,6 +112,41 @@ class PendingAppsActivity : AppCompatActivity() {
             "com.android.system"
         )
         return ignoredPackages.contains(packageName)
+    }
+
+    private fun getAppLabel(pm: android.content.pm.PackageManager, pkg: String): String {
+        // Strategie 1: Versuche getPackageInfo
+        try {
+            @Suppress("DEPRECATION")
+            val packageInfo = pm.getPackageInfo(pkg, 0)
+            return pm.getApplicationLabel(packageInfo.applicationInfo).toString()
+        } catch (e: Exception) {
+            // Weiter zur nächsten Strategie
+        }
+
+        // Strategie 2: Versuche über alle installierten Packages zu iterieren
+        try {
+            @Suppress("DEPRECATION")
+            val installedApps = pm.getInstalledApplications(0)
+            val appInfo = installedApps.find { it.packageName == pkg }
+            if (appInfo != null) {
+                return pm.getApplicationLabel(appInfo).toString()
+            }
+        } catch (e: Exception) {
+            // Weiter zur nächsten Strategie
+        }
+
+        // Strategie 3: Versuche mit MATCH_UNINSTALLED_PACKAGES
+        try {
+            @Suppress("DEPRECATION")
+            val packageInfo = pm.getPackageInfo(pkg, android.content.pm.PackageManager.MATCH_UNINSTALLED_PACKAGES)
+            return pm.getApplicationLabel(packageInfo.applicationInfo).toString()
+        } catch (e: Exception) {
+            // Alle Strategien fehlgeschlagen
+        }
+
+        // Fallback: Formatiere den Package-Namen
+        return formatPackageName(pkg)
     }
 
     private fun formatPackageName(packageName: String): String {

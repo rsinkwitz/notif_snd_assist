@@ -37,16 +37,7 @@ class DialogSeenAppsActivity : AppCompatActivity() {
         val pm = packageManager
         // Erzeuge eine Liste mit nur App-Namen (Label)
         seenApps = seenAppsPkgs.map { pkg ->
-            try {
-                @Suppress("DEPRECATION")
-                val appInfo = pm.getApplicationInfo(pkg, PackageManager.MATCH_UNINSTALLED_PACKAGES)
-                val label = pm.getApplicationLabel(appInfo).toString()
-                android.util.Log.d("Piepton", "App-Name für $pkg: $label")
-                label
-            } catch (e: Exception) {
-                android.util.Log.w("Piepton", "App nicht gefunden, verwende formatierten Namen für $pkg")
-                formatPackageName(pkg)
-            }
+            getAppLabel(pm, pkg)
         }.toMutableList()
         adapter = ArrayAdapter(this, android.R.layout.simple_list_item_1, seenApps)
         val listView = findViewById<ListView>(R.id.listSeenApps)
@@ -56,147 +47,84 @@ class DialogSeenAppsActivity : AppCompatActivity() {
             val pkg = seenAppsPkgs[position]
             val appLabel = seenApps[position]
 
-            // Prüfe ob die App noch installiert ist
-            val isInstalled = try {
-                @Suppress("DEPRECATION")
-                pm.getApplicationInfo(pkg, 0)
-                true
-            } catch (e: Exception) {
-                false
-            }
 
-            if (isInstalled) {
-                // App ist installiert - biete "Als neu markieren" an
-                AlertDialog.Builder(this)
-                    .setTitle("Als neu markieren?")
-                    .setMessage("$appLabel zurück zu 'Neue Apps' verschieben?")
-                    .setPositiveButton("Als neu markieren") { _, _ ->
-                        // Verschiebe von "seen" zu "pending"
-                        seenAppsPkgs.removeAt(position)
-                        prefs.edit().putStringSet(seenAppsKey, seenAppsPkgs.toSet()).apply()
+            // Zeige Dialog mit drei Optionen: Als neu markieren, Entfernen, Abbrechen
+            AlertDialog.Builder(this)
+                .setTitle("Optionen für $appLabel")
+                .setMessage("Was möchten Sie tun?")
+                .setPositiveButton("Als neu markieren") { _, _ ->
+                    // Verschiebe von "seen" zu "pending"
+                    seenAppsPkgs.removeAt(position)
+                    prefs.edit().putStringSet(seenAppsKey, seenAppsPkgs.toSet()).apply()
 
-                        val pendingApps = prefs.getStringSet(pendingKey, setOf())?.toMutableSet() ?: mutableSetOf()
-                        pendingApps.add(pkg)
-                        prefs.edit().putStringSet(pendingKey, pendingApps).apply()
+                    val pendingApps = prefs.getStringSet(pendingKey, setOf())?.toMutableSet() ?: mutableSetOf()
+                    pendingApps.add(pkg)
+                    prefs.edit().putStringSet(pendingKey, pendingApps).apply()
 
-                        seenApps.removeAt(position)
-                        adapter.notifyDataSetChanged()
-                        Toast.makeText(this, "$appLabel als neu markiert", Toast.LENGTH_SHORT).show()
-                    }
-                    .setNegativeButton("Abbrechen", null)
-                    .show()
-            } else {
-                // App ist deinstalliert - biete "Löschen" an
-                AlertDialog.Builder(this)
-                    .setTitle("Eintrag löschen?")
-                    .setMessage("$appLabel ist nicht mehr installiert. Eintrag entfernen?")
-                    .setPositiveButton("Löschen") { _, _ ->
-                        // Entferne aus "seen"
-                        seenAppsPkgs.removeAt(position)
-                        prefs.edit().putStringSet(seenAppsKey, seenAppsPkgs.toSet()).apply()
+                    seenApps.removeAt(position)
+                    adapter.notifyDataSetChanged()
+                    Toast.makeText(this, "$appLabel wurde als neu markiert", Toast.LENGTH_SHORT).show()
+                }
+                .setNegativeButton("Entfernen") { _, _ ->
+                    // Entferne aus "seen" ohne zu "pending" zu verschieben
+                    seenAppsPkgs.removeAt(position)
+                    prefs.edit().putStringSet(seenAppsKey, seenAppsPkgs.toSet()).apply()
 
-                        seenApps.removeAt(position)
-                        adapter.notifyDataSetChanged()
-                        Toast.makeText(this, "$appLabel entfernt", Toast.LENGTH_SHORT).show()
-                    }
-                    .setNegativeButton("Abbrechen", null)
-                    .show()
-            }
+                    seenApps.removeAt(position)
+                    adapter.notifyDataSetChanged()
+                    Toast.makeText(this, "$appLabel wurde entfernt", Toast.LENGTH_SHORT).show()
+                }
+                .setNeutralButton("Abbrechen", null)
+                .show()
         }
 
-        findViewById<Button>(R.id.btnClearAll).setOnClickListener {
-            // Zähle deinstallierte Apps
-            val uninstalledApps = seenAppsPkgs.filterIndexed { index, pkg ->
-                try {
-                    @Suppress("DEPRECATION")
-                    pm.getApplicationInfo(pkg, 0)
-                    false // installiert
-                } catch (e: Exception) {
-                    true // deinstalliert
+        findViewById<Button>(R.id.btnMarkAllAsNew).setOnClickListener {
+            // Verschiebe alle Apps zu "Neue Apps"
+            if (seenAppsPkgs.isEmpty()) {
+                Toast.makeText(this, "Keine Apps vorhanden", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+
+            AlertDialog.Builder(this)
+                .setTitle("Alle als neu markieren?")
+                .setMessage("Wirklich alle ${seenAppsPkgs.size} App(s) zurück zu 'Neue Apps' verschieben?")
+                .setPositiveButton("Ja") { _, _ ->
+                    val pendingApps = prefs.getStringSet(pendingKey, setOf())?.toMutableSet() ?: mutableSetOf()
+                    pendingApps.addAll(seenAppsPkgs)
+                    prefs.edit()
+                        .putStringSet(pendingKey, pendingApps)
+                        .putStringSet(seenAppsKey, setOf())
+                        .apply()
+
+                    seenAppsPkgs.clear()
+                    seenApps.clear()
+                    adapter.notifyDataSetChanged()
+                    Toast.makeText(this, "Alle Apps wurden als neu markiert", Toast.LENGTH_SHORT).show()
                 }
+                .setNegativeButton("Abbrechen", null)
+                .show()
+        }
+
+        findViewById<Button>(R.id.btnRemoveAll).setOnClickListener {
+            // Entferne alle Apps komplett
+            if (seenAppsPkgs.isEmpty()) {
+                Toast.makeText(this, "Keine Apps vorhanden", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
             }
 
-            if (uninstalledApps.isEmpty()) {
-                // Keine deinstallierten Apps - biete "Alle als neu markieren" an
-                AlertDialog.Builder(this)
-                    .setTitle("Alle als neu markieren?")
-                    .setMessage("Wirklich alle Apps zurück zu 'Neue Apps' verschieben?")
-                    .setPositiveButton("Ja") { _, _ ->
-                        // Verschiebe alle von "seen" zu "pending"
-                        val pendingApps = prefs.getStringSet(pendingKey, setOf())?.toMutableSet() ?: mutableSetOf()
-                        pendingApps.addAll(seenAppsPkgs)
-                        prefs.edit()
-                            .putStringSet(pendingKey, pendingApps)
-                            .putStringSet(seenAppsKey, setOf())
-                            .apply()
+            AlertDialog.Builder(this)
+                .setTitle("Alle löschen?")
+                .setMessage("Wirklich alle ${seenAppsPkgs.size} App(s) komplett löschen?")
+                .setPositiveButton("Ja") { _, _ ->
+                    prefs.edit().putStringSet(seenAppsKey, setOf()).apply()
 
-                        seenAppsPkgs.clear()
-                        seenApps.clear()
-                        adapter.notifyDataSetChanged()
-                        Toast.makeText(this, "Alle Apps als neu markiert", Toast.LENGTH_SHORT).show()
-                    }
-                    .setNegativeButton("Abbrechen", null)
-                    .show()
-            } else {
-                // Es gibt deinstallierte Apps - biete Optionen an
-                AlertDialog.Builder(this)
-                    .setTitle("Optionen")
-                    .setMessage("${uninstalledApps.size} deinstallierte App(s) gefunden")
-                    .setPositiveButton("Alle als neu markieren") { _, _ ->
-                        // Verschiebe nur installierte Apps zu "pending"
-                        val installedApps = seenAppsPkgs.filter { pkg ->
-                            try {
-                                @Suppress("DEPRECATION")
-                                pm.getApplicationInfo(pkg, 0)
-                                true
-                            } catch (e: Exception) {
-                                false
-                            }
-                        }
-                        val pendingApps = prefs.getStringSet(pendingKey, setOf())?.toMutableSet() ?: mutableSetOf()
-                        pendingApps.addAll(installedApps)
-                        prefs.edit()
-                            .putStringSet(pendingKey, pendingApps)
-                            .putStringSet(seenAppsKey, setOf())
-                            .apply()
-
-                        seenAppsPkgs.clear()
-                        seenApps.clear()
-                        adapter.notifyDataSetChanged()
-                        Toast.makeText(this, "Alle Apps als neu markiert", Toast.LENGTH_SHORT).show()
-                    }
-                    .setNeutralButton("Deinstallierte löschen") { _, _ ->
-                        // Entferne nur deinstallierte Apps
-                        val installedApps = seenAppsPkgs.filterIndexed { index, pkg ->
-                            try {
-                                @Suppress("DEPRECATION")
-                                pm.getApplicationInfo(pkg, 0)
-                                true
-                            } catch (e: Exception) {
-                                false
-                            }
-                        }
-                        prefs.edit().putStringSet(seenAppsKey, installedApps.toSet()).apply()
-
-                        // Aktualisiere die Listen
-                        seenAppsPkgs.clear()
-                        seenAppsPkgs.addAll(installedApps)
-                        seenApps.clear()
-                        seenApps.addAll(installedApps.map { pkg ->
-                            try {
-                                @Suppress("DEPRECATION")
-                                val appInfo = pm.getApplicationInfo(pkg, PackageManager.MATCH_UNINSTALLED_PACKAGES)
-                                pm.getApplicationLabel(appInfo).toString()
-                            } catch (e: Exception) {
-                                formatPackageName(pkg)
-                            }
-                        })
-                        adapter.notifyDataSetChanged()
-                        Toast.makeText(this, "${uninstalledApps.size} deinstallierte App(s) entfernt", Toast.LENGTH_SHORT).show()
-                    }
-                    .setNegativeButton("Abbrechen", null)
-                    .show()
-            }
+                    seenAppsPkgs.clear()
+                    seenApps.clear()
+                    adapter.notifyDataSetChanged()
+                    Toast.makeText(this, "Alle Apps wurden gelöscht", Toast.LENGTH_SHORT).show()
+                }
+                .setNegativeButton("Abbrechen", null)
+                .show()
         }
     }
 
@@ -208,6 +136,77 @@ class DialogSeenAppsActivity : AppCompatActivity() {
             "com.android.system"
         )
         return ignoredPackages.contains(packageName)
+    }
+
+    private fun getAppLabel(pm: android.content.pm.PackageManager, pkg: String): String {
+        // Strategie 1: Versuche getPackageInfo
+        try {
+            @Suppress("DEPRECATION")
+            val packageInfo = pm.getPackageInfo(pkg, 0)
+            val label = pm.getApplicationLabel(packageInfo.applicationInfo).toString()
+            android.util.Log.d("Piepton", "App-Name für $pkg: $label (Strategie 1)")
+            return label
+        } catch (e: Exception) {
+            android.util.Log.d("Piepton", "Strategie 1 fehlgeschlagen für $pkg: ${e.message}")
+        }
+
+        // Strategie 2: Versuche über alle installierten Packages zu iterieren
+        try {
+            @Suppress("DEPRECATION")
+            val installedApps = pm.getInstalledApplications(0)
+            android.util.Log.d("Piepton", "Strategie 2: ${installedApps.size} Apps gefunden, suche nach $pkg")
+            val appInfo = installedApps.find { it.packageName == pkg }
+            if (appInfo != null) {
+                val label = pm.getApplicationLabel(appInfo).toString()
+                android.util.Log.d("Piepton", "App-Name für $pkg: $label (Strategie 2 - gefunden!)")
+                return label
+            } else {
+                android.util.Log.w("Piepton", "Strategie 2: $pkg nicht in Liste gefunden")
+            }
+        } catch (e: Exception) {
+            android.util.Log.e("Piepton", "Strategie 2 Exception für $pkg: ${e.message}")
+        }
+
+        // Strategie 2a: Versuche mit MATCH_ALL für Multi-User
+        try {
+            @Suppress("DEPRECATION")
+            val installedApps = pm.getInstalledApplications(android.content.pm.PackageManager.MATCH_ALL)
+            android.util.Log.d("Piepton", "Strategie 2a (MATCH_ALL): ${installedApps.size} Apps gefunden, suche nach $pkg")
+            val appInfo = installedApps.find { it.packageName == pkg }
+            if (appInfo != null) {
+                val label = pm.getApplicationLabel(appInfo).toString()
+                android.util.Log.d("Piepton", "App-Name für $pkg: $label (Strategie 2a MATCH_ALL - gefunden!)")
+                return label
+            } else {
+                android.util.Log.w("Piepton", "Strategie 2a: $pkg nicht in Liste gefunden")
+                // Debug: Liste alle Yahoo und Facebook packages
+                val yahoofb = installedApps.filter {
+                    it.packageName.contains("yahoo", ignoreCase = true) ||
+                    it.packageName.contains("facebook", ignoreCase = true) ||
+                    it.packageName.contains("whatsapp", ignoreCase = true)
+                }
+                if (yahoofb.isNotEmpty()) {
+                    android.util.Log.d("Piepton", "Gefundene Yahoo/Facebook/WhatsApp Packages: ${yahoofb.map { it.packageName }}")
+                }
+            }
+        } catch (e: Exception) {
+            android.util.Log.e("Piepton", "Strategie 2a Exception für $pkg: ${e.message}")
+        }
+
+        // Strategie 3: Versuche mit MATCH_UNINSTALLED_PACKAGES (für teilweise deinstallierte Apps)
+        try {
+            @Suppress("DEPRECATION")
+            val packageInfo = pm.getPackageInfo(pkg, android.content.pm.PackageManager.MATCH_UNINSTALLED_PACKAGES)
+            val label = pm.getApplicationLabel(packageInfo.applicationInfo).toString()
+            android.util.Log.d("Piepton", "App-Name für $pkg: $label (Strategie 3 - deinstalliert)")
+            return label
+        } catch (e: Exception) {
+            android.util.Log.d("Piepton", "Strategie 3 fehlgeschlagen für $pkg: ${e.message}")
+        }
+
+        // Fallback: Formatiere den Package-Namen
+        android.util.Log.w("Piepton", "Alle Strategien fehlgeschlagen für $pkg, verwende formatierten Namen")
+        return formatPackageName(pkg)
     }
 
     private fun formatPackageName(packageName: String): String {

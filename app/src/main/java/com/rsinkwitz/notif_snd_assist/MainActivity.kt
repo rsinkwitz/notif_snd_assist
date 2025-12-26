@@ -36,7 +36,7 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
-        setTitle("Notification Sound Assistant")
+        setTitle("Ton-Assistent")
         checkNotificationListenerPermission()
 
         // RecyclerView initialisieren
@@ -132,7 +132,7 @@ class MainActivity : AppCompatActivity() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val channel = NotificationChannel(
                 channelId,
-                "Test Channel",
+                "Test-Kanal",
                 NotificationManager.IMPORTANCE_HIGH
             )
             // Default-Sound explizit setzen
@@ -142,14 +142,14 @@ class MainActivity : AppCompatActivity() {
 
         val notification = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             Notification.Builder(this, channelId)
-                .setContentTitle("Test Notification")
-                .setContentText("Hello from NotificationSoundAssistant")
+                .setContentTitle("Test-Benachrichtigung")
+                .setContentText("Dies ist eine Test-Benachrichtigung")
                 .setSmallIcon(android.R.drawable.ic_dialog_info)
                 .build()
         } else {
             Notification.Builder(this)
-                .setContentTitle("Test Notification")
-                .setContentText("Hello from NotificationSoundAssistant")
+                .setContentTitle("Test-Benachrichtigung")
+                .setContentText("Dies ist eine Test-Benachrichtigung")
                 .setSmallIcon(android.R.drawable.ic_dialog_info)
                 .build()
         }
