@@ -35,6 +35,19 @@ class MainActivity : AppCompatActivity() {
     @RequiresApi(Build.VERSION_CODES.O)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
+        // Prüfe ob Onboarding bereits abgeschlossen wurde
+        val prefs = getSharedPreferences("notif_snd_assist_prefs", Context.MODE_PRIVATE)
+        val onboardingCompleted = prefs.getBoolean("onboarding_completed", false)
+
+        if (!onboardingCompleted) {
+            // Zeige Onboarding
+            val intent = Intent(this, OnboardingActivity::class.java)
+            startActivity(intent)
+            finish()
+            return
+        }
+
         setContentView(R.layout.activity_main)
         setTitle(R.string.main_title)
         checkNotificationListenerPermission()
@@ -43,16 +56,16 @@ class MainActivity : AppCompatActivity() {
         rvHistory = findViewById(R.id.rvNotificationHistory)
         rvHistory.layoutManager = LinearLayoutManager(this)
 
-        findViewById<Button>(R.id.btnTest).setOnClickListener {
-            Log.d("Piepton", "TEST button clicked")
-            sendTestNotification()
-        }
         findViewById<Button>(R.id.btnSeenApps).setOnClickListener {
             val intent = Intent(this, DialogSeenAppsActivity::class.java)
             startActivity(intent)
         }
         findViewById<Button>(R.id.btnPendingApps).setOnClickListener {
             val intent = Intent(this, PendingAppsActivity::class.java)
+            startActivity(intent)
+        }
+        findViewById<Button>(R.id.btnHelp).setOnClickListener {
+            val intent = Intent(this, HelpActivity::class.java)
             startActivity(intent)
         }
 
@@ -96,7 +109,8 @@ class MainActivity : AppCompatActivity() {
                 val entry = history.getJSONObject(i)
                 val packageName = entry.getString("packageName")
                 val timestamp = entry.getLong("timestamp")
-                items.add(NotificationHistoryItem(packageName, timestamp))
+                val channelId = if (entry.has("channelId")) entry.getString("channelId") else null
+                items.add(NotificationHistoryItem(packageName, timestamp, channelId))
             }
         } catch (e: Exception) {
             Log.e("Piepton", "Error loading notification history", e)
@@ -123,38 +137,5 @@ class MainActivity : AppCompatActivity() {
             intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             startActivity(intent)
         }
-    }
-
-    private fun sendTestNotification() {
-        val channelId = "test_channel"
-        val nm = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
-
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val channel = NotificationChannel(
-                channelId,
-                getString(R.string.test_channel_name),
-                NotificationManager.IMPORTANCE_HIGH
-            )
-            channel.description = getString(R.string.test_channel_description)
-            // Default-Sound explizit setzen
-            channel.setSound(android.provider.Settings.System.DEFAULT_NOTIFICATION_URI, null)
-            nm.createNotificationChannel(channel)
-        }
-
-        val notification = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            Notification.Builder(this, channelId)
-                .setContentTitle(getString(R.string.test_notification_title))
-                .setContentText(getString(R.string.test_notification_text))
-                .setSmallIcon(android.R.drawable.ic_dialog_info)
-                .build()
-        } else {
-            Notification.Builder(this)
-                .setContentTitle(getString(R.string.test_notification_title))
-                .setContentText(getString(R.string.test_notification_text))
-                .setSmallIcon(android.R.drawable.ic_dialog_info)
-                .build()
-        }
-
-        nm.notify(1001, notification)
     }
 }

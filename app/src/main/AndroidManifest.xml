@@ -19,6 +19,12 @@
             </intent-filter>
         </activity>
         <activity
+            android:name=".OnboardingActivity"
+            android:exported="false"/>
+        <activity
+            android:name=".HelpActivity"
+            android:exported="false"/>
+        <activity
             android:name=".DialogActivity"
             android:exported="true"
             android:theme="@style/Theme.AppCompat.Dialog.Alert"/>

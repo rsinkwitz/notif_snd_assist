@@ -54,5 +54,52 @@
     <string name="test_notification_text">Test-Benachrichtigung</string>
     <string name="test_channel_name">Test Channel</string>
     <string name="test_channel_description">Channel für Test-Benachrichtigungen</string>
+
+    <!-- Help Activity -->
+    <string name="help_title">Hilfe</string>
+    <string name="btn_help">Hilfe</string>
+    <string name="btn_close">Schließen</string>
+    <string name="help_content"><![CDATA[
+<b>Willkommen beim Ton-Assistenten!</b><br/><br/>
+
+Diese App hilft Ihnen, verschiedene Benachrichtigungstöne für Ihre Apps zu konfigurieren.<br/><br/>
+
+<b>1. Neue Apps</b><br/>
+Zeigt Apps an, die Benachrichtigungen mit Ton gesendet haben, aber noch nicht konfiguriert wurden. Tippen Sie auf einen Eintrag, um die Benachrichtigungseinstellungen der App zu öffnen und einen Ton zu konfigurieren.<br/><br/>
+
+<b>2. Gesehene Apps</b><br/>
+Zeigt Apps an, für die Sie bereits die Einstellungen geöffnet haben. Hier können Sie:<br/>
+• Als neu markieren: Zurück zur \"Neue Apps\" Liste verschieben<br/>
+• Entfernen: Aus der Liste löschen<br/><br/>
+
+<b>3. Letzte 5 Benachrichtigungen</b><br/>
+Zeigt die neuesten Benachrichtigungen mit Tönen. Tippen Sie auf einen Eintrag, um die Benachrichtigungseinstellungen dieser App zu öffnen.<br/><br/>
+
+<b>4. Test-Benachrichtigung</b><br/>
+Sendet eine Test-Benachrichtigung, um zu überprüfen, ob die App korrekt funktioniert.<br/><br/>
+
+<b>Wichtige Hinweise:</b><br/>
+• Die App überwacht nur Benachrichtigungen mit Ton<br/>
+• System-Benachrichtigungen werden automatisch gefiltert<br/>
+• Der Inhalt Ihrer Benachrichtigungen wird niemals gelesen oder gespeichert<br/>
+• Nur der App-Name und die Zeit werden erfasst<br/><br/>
+
+<b>Tipp:</b> Verschiedene Apps können mehrere Benachrichtigungskategorien haben. Stellen Sie sicher, dass Sie den Ton für die richtige Kategorie in den App-Einstellungen konfigurieren.
+    ]]></string>
+
+    <!-- Onboarding Activity -->
+    <string name="onboarding_step1_title">Willkommen!</string>
+    <string name="onboarding_step1_description">Der Ton-Assistent hilft Ihnen, verschiedene Benachrichtigungstöne für Ihre Apps einzurichten.\n\nSo können Sie jede App an ihrem individuellen Ton erkennen.</string>
+    <string name="onboarding_step2_title">Berechtigung erforderlich</string>
+    <string name="onboarding_step2_description">Um Benachrichtigungen zu überwachen, benötigt die App Zugriff auf Benachrichtigungen.\n\nDer Inhalt Ihrer Benachrichtigungen wird nicht gelesen oder gespeichert.</string>
+    <string name="onboarding_step3_title">Fertig!</string>
+    <string name="onboarding_step3_description">Sie können jetzt loslegen!\n\nWenn Apps Benachrichtigungen mit Ton senden, erscheinen sie unter \"Neue Apps\". Tippen Sie darauf, um einen individuellen Ton einzustellen.</string>
+    <string name="onboarding_listener_dialog_title">Benachrichtigungszugriff gewähren</string>
+    <string name="onboarding_listener_dialog_message">Bitte aktivieren Sie den Benachrichtigungszugriff für den Ton-Assistenten in den Einstellungen.</string>
+    <string name="btn_next">Weiter</string>
+    <string name="btn_skip">Überspringen</string>
+    <string name="btn_finish">Fertig</string>
+    <string name="btn_grant_permission">Berechtigung erteilen</string>
+    <string name="btn_open_settings">Einstellungen öffnen</string>
 </resources>
 

@@ -54,4 +54,51 @@
     <string name="test_notification_text">Test Notification</string>
     <string name="test_channel_name">Test Channel</string>
     <string name="test_channel_description">Channel for test notifications</string>
+
+    <!-- Help Activity -->
+    <string name="help_title">Help</string>
+    <string name="btn_help">Help</string>
+    <string name="btn_close">Close</string>
+    <string name="help_content"><![CDATA[
+<b>Welcome to Sound Assistant!</b><br/><br/>
+
+This app helps you configure different notification sounds for your apps.<br/><br/>
+
+<b>1. New Apps</b><br/>
+Shows apps that have sent notifications with sound but have not yet been configured. Tap an entry to open the app\'s notification settings and configure a sound.<br/><br/>
+
+<b>2. Seen Apps</b><br/>
+Shows apps that you have already opened the settings for. Here you can:<br/>
+• Mark as New: Move back to \"New Apps\" list<br/>
+• Remove: Delete from the list<br/><br/>
+
+<b>3. Last 5 Notifications</b><br/>
+Shows the most recent notifications with sounds. Tap an entry to open the notification settings of that app.<br/><br/>
+
+<b>4. Test Notification</b><br/>
+Sends a test notification to verify that the app is working correctly.<br/><br/>
+
+<b>Important Notes:</b><br/>
+• The app only monitors notifications with sound<br/>
+• System notifications are automatically filtered<br/>
+• The content of your notifications is never read or stored<br/>
+• Only the app name and time are captured<br/><br/>
+
+<b>Tip:</b> Different apps can have multiple notification categories. Make sure you configure the sound for the correct category in the app settings.
+    ]]></string>
+
+    <!-- Onboarding Activity -->
+    <string name="onboarding_step1_title">Welcome!</string>
+    <string name="onboarding_step1_description">Sound Assistant helps you set up different notification sounds for your apps.\n\nThis way you can recognize each app by its individual sound.</string>
+    <string name="onboarding_step2_title">Permission Required</string>
+    <string name="onboarding_step2_description">To monitor notifications, the app needs access to notifications.\n\nThe content of your notifications is not read or stored.</string>
+    <string name="onboarding_step3_title">Done!</string>
+    <string name="onboarding_step3_description">You can now get started!\n\nWhen apps send notifications with sound, they will appear under \"New Apps\". Tap on them to set an individual sound.</string>
+    <string name="onboarding_listener_dialog_title">Grant Notification Access</string>
+    <string name="onboarding_listener_dialog_message">Please enable notification access for Sound Assistant in the settings.</string>
+    <string name="btn_next">Next</string>
+    <string name="btn_skip">Skip</string>
+    <string name="btn_finish">Finish</string>
+    <string name="btn_grant_permission">Grant Permission</string>
+    <string name="btn_open_settings">Open Settings</string>
 </resources>

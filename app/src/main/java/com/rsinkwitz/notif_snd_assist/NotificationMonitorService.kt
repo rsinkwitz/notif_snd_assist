@@ -62,13 +62,20 @@ class NotificationMonitorService : NotificationListenerService() {
             return
         }
 
+        // Hole channelId für Android O und höher
+        val channelId = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            notification?.channelId
+        } else {
+            null
+        }
+
         val prefs = getSharedPreferences("notif_snd_assist_prefs", Context.MODE_PRIVATE)
         val seenApps = prefs.getStringSet("seen_apps", mutableSetOf()) ?: mutableSetOf()
         val pendingKey = "pending_apps"
         val pendingApps = prefs.getStringSet(pendingKey, mutableSetOf()) ?: mutableSetOf()
 
         // Speichere die Benachrichtigung in der History (letzte 5)
-        saveNotificationToHistory(packageName)
+        saveNotificationToHistory(packageName, channelId)
 
         if (!seenApps.contains(packageName) && !pendingApps.contains(packageName)) {
             // App wurde noch nicht behandelt und ist nicht in pending
@@ -169,7 +176,7 @@ class NotificationMonitorService : NotificationListenerService() {
         return false
     }
 
-    private fun saveNotificationToHistory(packageName: String) {
+    private fun saveNotificationToHistory(packageName: String, channelId: String?) {
         val prefs = getSharedPreferences("notif_snd_assist_prefs", Context.MODE_PRIVATE)
         val historyKey = "notification_history"
         val historyJson = prefs.getString(historyKey, "[]")
@@ -185,6 +192,9 @@ class NotificationMonitorService : NotificationListenerService() {
         val newEntry = org.json.JSONObject()
         newEntry.put("packageName", packageName)
         newEntry.put("timestamp", System.currentTimeMillis())
+        if (channelId != null) {
+            newEntry.put("channelId", channelId)
+        }
 
         // Erstelle neue History und füge den neuen Eintrag am Anfang hinzu
         val newHistory = org.json.JSONArray()
