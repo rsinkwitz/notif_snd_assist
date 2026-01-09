@@ -13,6 +13,7 @@ import androidx.appcompat.app.AppCompatActivity
 class DialogSeenAppsActivity : AppCompatActivity() {
     private lateinit var adapter: ArrayAdapter<String>
     private lateinit var seenApps: MutableList<String>
+    private lateinit var seenKeys: MutableList<String> // packageName:channelId
     private val prefsName = "notif_snd_assist_prefs"
     private val seenAppsKey = "seen_apps"
     private val pendingKey = "pending_apps"
@@ -26,26 +27,26 @@ class DialogSeenAppsActivity : AppCompatActivity() {
         val allSeenApps = (prefs.getStringSet(seenAppsKey, setOf()) ?: setOf()).toMutableList()
 
         // Filtere unerwünschte Apps heraus (z.B. com.android.systemui)
-        val filtered = allSeenApps.filter { pkg -> !shouldFilterPackage(pkg) }.sorted()
+        val filtered = allSeenApps.filter { key -> !shouldFilterPackage(key) }.sorted()
 
         // Wenn gefilterte Apps gefunden wurden, aktualisiere die SharedPreferences
         if (filtered.size < allSeenApps.size) {
             prefs.edit().putStringSet(seenAppsKey, filtered.toSet()).apply()
         }
 
-        val seenAppsPkgs = filtered.toMutableList()
+        seenKeys = filtered.toMutableList()
         val pm = packageManager
-        // Erzeuge eine Liste mit nur App-Namen (Label)
-        seenApps = seenAppsPkgs.map { pkg ->
-            getAppLabel(pm, pkg)
+        // Erzeuge eine Liste mit App-Namen und Channel-IDs
+        seenApps = seenKeys.map { key ->
+            getAppLabelWithChannel(pm, key)
         }.toMutableList()
         adapter = ArrayAdapter(this, android.R.layout.simple_list_item_1, seenApps)
         val listView = findViewById<ListView>(R.id.listSeenApps)
         listView.adapter = adapter
 
         listView.setOnItemClickListener { _, _, position, _ ->
-            val pkg = seenAppsPkgs[position]
-            val appLabel = seenApps[position]
+            val key = seenKeys[position]
+            val appLabel = seenApps[position].substringBefore('\n')
 
 
             // Zeige Dialog mit drei Optionen: Als neu markieren, Entfernen, Abbrechen
@@ -54,81 +55,107 @@ class DialogSeenAppsActivity : AppCompatActivity() {
                 .setMessage(getString(R.string.dialog_action_for_app, appLabel))
                 .setPositiveButton(R.string.btn_mark_as_new) { _, _ ->
                     // Verschiebe von "seen" zu "pending"
-                    seenAppsPkgs.removeAt(position)
-                    prefs.edit().putStringSet(seenAppsKey, seenAppsPkgs.toSet()).apply()
+                    seenKeys.removeAt(position)
+                    prefs.edit().putStringSet(seenAppsKey, seenKeys.toSet()).apply()
 
                     val pendingApps = prefs.getStringSet(pendingKey, setOf())?.toMutableSet() ?: mutableSetOf()
-                    pendingApps.add(pkg)
+                    pendingApps.add(key)
                     prefs.edit().putStringSet(pendingKey, pendingApps).apply()
 
                     seenApps.removeAt(position)
                     adapter.notifyDataSetChanged()
+                    updateButtonStates()
                     Toast.makeText(this, getString(R.string.toast_marked_as_new, appLabel), Toast.LENGTH_SHORT).show()
                 }
                 .setNegativeButton(R.string.btn_remove) { _, _ ->
                     // Entferne aus "seen" ohne zu "pending" zu verschieben
-                    seenAppsPkgs.removeAt(position)
-                    prefs.edit().putStringSet(seenAppsKey, seenAppsPkgs.toSet()).apply()
+                    seenKeys.removeAt(position)
+                    prefs.edit().putStringSet(seenAppsKey, seenKeys.toSet()).apply()
 
                     seenApps.removeAt(position)
                     adapter.notifyDataSetChanged()
+                    updateButtonStates()
                     Toast.makeText(this, getString(R.string.toast_removed, appLabel), Toast.LENGTH_SHORT).show()
                 }
                 .setNeutralButton(R.string.btn_cancel, null)
                 .show()
         }
 
-        findViewById<Button>(R.id.btnMarkAllAsNew).setOnClickListener {
+        val btnMarkAllAsNew = findViewById<Button>(R.id.btnMarkAllAsNew)
+        val btnRemoveAll = findViewById<Button>(R.id.btnRemoveAll)
+        val btnClose = findViewById<Button>(R.id.btnClose)
+
+        // Aktualisiere Button-Status basierend auf Liste
+        updateButtonStates()
+
+        btnMarkAllAsNew.setOnClickListener {
             // Verschiebe alle Apps zu "Neue Apps"
-            if (seenAppsPkgs.isEmpty()) {
+            if (seenKeys.isEmpty()) {
                 Toast.makeText(this, R.string.toast_no_apps_available, Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
 
             AlertDialog.Builder(this)
                 .setTitle(R.string.dialog_mark_all_as_new_title)
-                .setMessage(getString(R.string.dialog_mark_all_as_new_message, seenAppsPkgs.size))
+                .setMessage(getString(R.string.dialog_mark_all_as_new_message, seenKeys.size))
                 .setPositiveButton(R.string.btn_yes) { _, _ ->
                     val pendingApps = prefs.getStringSet(pendingKey, setOf())?.toMutableSet() ?: mutableSetOf()
-                    pendingApps.addAll(seenAppsPkgs)
+                    pendingApps.addAll(seenKeys)
                     prefs.edit()
                         .putStringSet(pendingKey, pendingApps)
                         .putStringSet(seenAppsKey, setOf())
                         .apply()
 
-                    seenAppsPkgs.clear()
+                    seenKeys.clear()
                     seenApps.clear()
                     adapter.notifyDataSetChanged()
+                    updateButtonStates()
                     Toast.makeText(this, R.string.toast_all_marked_as_new, Toast.LENGTH_SHORT).show()
                 }
                 .setNegativeButton(R.string.btn_cancel, null)
                 .show()
         }
 
-        findViewById<Button>(R.id.btnRemoveAll).setOnClickListener {
+        btnRemoveAll.setOnClickListener {
             // Entferne alle Apps komplett
-            if (seenAppsPkgs.isEmpty()) {
+            if (seenKeys.isEmpty()) {
                 Toast.makeText(this, R.string.toast_no_apps_available, Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
 
             AlertDialog.Builder(this)
                 .setTitle(R.string.dialog_delete_all_title)
-                .setMessage(getString(R.string.dialog_delete_all_message, seenAppsPkgs.size))
+                .setMessage(getString(R.string.dialog_delete_all_message, seenKeys.size))
                 .setPositiveButton(R.string.btn_yes) { _, _ ->
                     prefs.edit().putStringSet(seenAppsKey, setOf()).apply()
 
-                    seenAppsPkgs.clear()
+                    seenKeys.clear()
                     seenApps.clear()
                     adapter.notifyDataSetChanged()
+                    updateButtonStates()
                     Toast.makeText(this, R.string.toast_all_apps_deleted, Toast.LENGTH_SHORT).show()
                 }
                 .setNegativeButton(R.string.btn_cancel, null)
                 .show()
         }
+
+        btnClose.setOnClickListener {
+            finish()
+        }
     }
 
-    private fun shouldFilterPackage(packageName: String): Boolean {
+    private fun updateButtonStates() {
+        val btnMarkAllAsNew = findViewById<Button>(R.id.btnMarkAllAsNew)
+        val btnRemoveAll = findViewById<Button>(R.id.btnRemoveAll)
+
+        btnMarkAllAsNew.isEnabled = seenKeys.isNotEmpty()
+        btnRemoveAll.isEnabled = seenKeys.isNotEmpty()
+    }
+
+    private fun shouldFilterPackage(key: String): Boolean {
+        // Extrahiere packageName aus key (vor dem Doppelpunkt)
+        val packageName = key.substringBefore(':')
+
         // Filtere System-UI und andere unerwünschte Apps
         val ignoredPackages = listOf(
             "com.android.systemui",
@@ -136,6 +163,26 @@ class DialogSeenAppsActivity : AppCompatActivity() {
             "com.android.system"
         )
         return ignoredPackages.contains(packageName)
+    }
+
+    private fun getAppLabelWithChannel(pm: android.content.pm.PackageManager, key: String): String {
+        val parts = key.split(':')
+        val packageName = parts[0]
+        val channelId = if (parts.size > 1) parts[1] else null
+
+        val appName = getAppLabel(pm, packageName)
+
+        // Wenn ein channelId vorhanden ist, formatiere und zeige ihn an
+        if (channelId != null && channelId.isNotEmpty()) {
+            val formattedChannel = ChannelFormatter.formatChannelId(channelId)
+            return if (formattedChannel != null) {
+                "$appName\n($formattedChannel)"
+            } else {
+                appName
+            }
+        }
+
+        return appName
     }
 
     private fun getAppLabel(pm: android.content.pm.PackageManager, pkg: String): String {

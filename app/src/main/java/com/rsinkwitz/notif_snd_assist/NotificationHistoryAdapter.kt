@@ -72,26 +72,33 @@ class NotificationHistoryAdapter(
             intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
             context.startActivity(intent)
 
-            // Verschiebe App von "Neue Apps" zu "Gesehene Apps" falls nötig
-            moveAppFromPendingToSeen(item.packageName)
+            // Verschiebe App:Channel von "Neue Apps" zu "Gesehene Apps" falls nötig
+            moveAppFromPendingToSeen(item.packageName, item.channelId)
         }
     }
 
-    private fun moveAppFromPendingToSeen(packageName: String) {
+    private fun moveAppFromPendingToSeen(packageName: String, channelId: String?) {
         val prefs = context.getSharedPreferences("notif_snd_assist_prefs", Context.MODE_PRIVATE)
         val pendingKey = "pending_apps"
         val seenKey = "seen_apps"
 
+        // Erstelle Channel-Key
+        val channelKey = if (channelId != null) {
+            "$packageName:$channelId"
+        } else {
+            packageName
+        }
+
         val pendingApps = prefs.getStringSet(pendingKey, setOf())?.toMutableSet() ?: mutableSetOf()
 
-        // Prüfe ob App in "Neue Apps" ist
-        if (pendingApps.contains(packageName)) {
+        // Prüfe ob App:Channel in "Neue Apps" ist
+        if (pendingApps.contains(channelKey)) {
             // Entferne aus "Neue Apps"
-            pendingApps.remove(packageName)
+            pendingApps.remove(channelKey)
 
             // Füge zu "Gesehene Apps" hinzu
             val seenApps = prefs.getStringSet(seenKey, setOf())?.toMutableSet() ?: mutableSetOf()
-            seenApps.add(packageName)
+            seenApps.add(channelKey)
 
             // Speichere Änderungen
             prefs.edit()
@@ -99,7 +106,7 @@ class NotificationHistoryAdapter(
                 .putStringSet(seenKey, seenApps)
                 .apply()
 
-            Log.d("Piepton", "App $packageName von 'Neue Apps' zu 'Gesehene Apps' verschoben")
+            Log.d("Piepton", "App:Channel $channelKey von 'Neue Apps' zu 'Gesehene Apps' verschoben")
         }
     }
 
@@ -185,6 +192,15 @@ class NotificationHistoryAdapter(
     }
 
     private fun formatChannelId(channelId: String): String? {
+        return ChannelFormatter.formatChannelId(channelId)
+    }
+}
+
+// Statische Hilfsfunktion für Channel-Formatierung
+object ChannelFormatter {
+    fun formatChannelId(channelId: String?): String? {
+        if (channelId == null) return null
+
         // Wenn die Channel-ID nur aus Zahlen besteht, nicht anzeigen
         if (channelId.all { it.isDigit() }) {
             return null
@@ -195,10 +211,47 @@ class NotificationHistoryAdapter(
             return null
         }
 
+        var formatted: String = channelId
+
+        // Spezielle Behandlung für Android Notification Categories
+        val categoryMap = mapOf(
+            "email" to "E-Mail",
+            "msg" to "Nachricht",
+            "message" to "Nachricht",
+            "call" to "Anruf",
+            "alarm" to "Alarm",
+            "event" to "Ereignis",
+            "promo" to "Werbung",
+            "reminder" to "Erinnerung",
+            "social" to "Social Media",
+            "status" to "Status",
+            "system" to "System",
+            "transport" to "Transport",
+            "err" to "Fehler",
+            "error" to "Fehler"
+        )
+
+        // Prüfe ob es eine bekannte Category ist
+        val lowerFormatted = formatted.lowercase()
+        if (categoryMap.containsKey(lowerFormatted)) {
+            return categoryMap[lowerFormatted]
+        }
+
+        // Entferne Paketpfade wie com.microsoft.*, Com.google.*, etc. (case-insensitive)
+        val packagePrefixes = listOf("com.microsoft", "com.google", "com.android", "com.samsung", "com.facebook", "com.yahoo")
+        for (prefix in packagePrefixes) {
+            if (formatted.startsWith(prefix, ignoreCase = true)) {
+                // Entferne den Präfix und alle Teile bis zum letzten Punkt
+                formatted = formatted.substringAfterLast('.')
+                break
+            }
+        }
+
         // Formatiere die Channel-ID etwas lesbarer
         // z.B. "500_mail__people_" -> "Mail People"
-        val formatted = channelId
+        formatted = formatted
             .replace("_", " ")
+            .replace("-", " ")
             .split(" ")
             .filter { it.isNotEmpty() && !it.all { char -> char.isDigit() } }
             .joinToString(" ") { word ->

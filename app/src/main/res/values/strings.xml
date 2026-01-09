@@ -92,8 +92,10 @@ Sends a test notification to verify that the app is working correctly.<br/><br/>
     <string name="onboarding_step1_description">Sound Assistant helps you set up different notification sounds for your apps.\n\nThis way you can recognize each app by its individual sound.</string>
     <string name="onboarding_step2_title">Permission Required</string>
     <string name="onboarding_step2_description">To monitor notifications, the app needs access to notifications.\n\nThe content of your notifications is not read or stored.</string>
-    <string name="onboarding_step3_title">Done!</string>
-    <string name="onboarding_step3_description">You can now get started!\n\nWhen apps send notifications with sound, they will appear under \"New Apps\". Tap on them to set an individual sound.</string>
+    <string name="onboarding_step3_title">Test Notification Permission</string>
+    <string name="onboarding_step3_description">To send test notifications, the app needs permission to post notifications.\n\nThis is needed to test your sound settings.</string>
+    <string name="onboarding_step4_title">Done!</string>
+    <string name="onboarding_step4_description">You can now get started!\n\nWhen apps send notifications with sound, they will appear under \"New Apps\". Tap on them to set an individual sound.</string>
     <string name="onboarding_listener_dialog_title">Grant Notification Access</string>
     <string name="onboarding_listener_dialog_message">Please enable notification access for Sound Assistant in the settings.</string>
     <string name="btn_next">Next</string>

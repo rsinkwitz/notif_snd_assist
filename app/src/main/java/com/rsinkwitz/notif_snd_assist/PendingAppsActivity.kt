@@ -13,7 +13,7 @@ import androidx.appcompat.app.AppCompatActivity
 
 class PendingAppsActivity : AppCompatActivity() {
     private lateinit var adapter: ArrayAdapter<String>
-    private lateinit var pendingPkgs: MutableList<String>
+    private lateinit var pendingKeys: MutableList<String> // packageName:channelId
     private lateinit var pendingLabels: MutableList<String>
     private val prefsName = "notif_snd_assist_prefs"
     private val pendingKey = "pending_apps"
@@ -28,42 +28,44 @@ class PendingAppsActivity : AppCompatActivity() {
         val allPending = (prefs.getStringSet(pendingKey, setOf()) ?: setOf()).toMutableList()
 
         // Filtere unerwünschte Apps heraus (z.B. com.android.systemui)
-        val filtered = allPending.filter { pkg -> !shouldFilterPackage(pkg) }.sorted()
+        val filtered = allPending.filter { key -> !shouldFilterPackage(key) }.sorted()
 
         // Wenn gefilterte Apps gefunden wurden, aktualisiere die SharedPreferences
         if (filtered.size < allPending.size) {
             prefs.edit().putStringSet(pendingKey, filtered.toSet()).apply()
         }
 
-        pendingPkgs = filtered.toMutableList()
+        pendingKeys = filtered.toMutableList()
         val pm = packageManager
-        pendingLabels = pendingPkgs.map { pkg ->
-            getAppLabel(pm, pkg)
+        pendingLabels = pendingKeys.map { key ->
+            getAppLabelWithChannel(pm, key)
         }.toMutableList()
         adapter = ArrayAdapter(this, android.R.layout.simple_list_item_1, pendingLabels)
         val listView = findViewById<ListView>(R.id.listSeenApps)
         listView.adapter = adapter
 
         listView.setOnItemClickListener { _, _, position, _ ->
-            val pkg = pendingPkgs[position]
+            val key = pendingKeys[position]
             val appLabel = pendingLabels[position].substringBefore('\n')
+            val packageName = key.substringBefore(':')
             AlertDialog.Builder(this)
                 .setTitle(R.string.dialog_open_settings)
                 .setMessage(getString(R.string.dialog_open_settings_message, appLabel))
                 .setPositiveButton(R.string.dialog_open_settings) { _, _ ->
-                    openAppSettings(pkg)
+                    openAppSettings(packageName)
                     // Nach Öffnen als "gesehen" markieren und aus pending entfernen
                     val prefsEdit = prefs.edit()
-                    val newPending = pendingPkgs.toMutableSet()
-                    newPending.remove(pkg)
+                    val newPending = pendingKeys.toMutableSet()
+                    newPending.remove(key)
                     prefsEdit.putStringSet(pendingKey, newPending)
                     val seen = prefs.getStringSet(seenKey, setOf())?.toMutableSet() ?: mutableSetOf()
-                    seen.add(pkg)
+                    seen.add(key)
                     prefsEdit.putStringSet(seenKey, seen)
                     prefsEdit.apply()
-                    pendingPkgs.removeAt(position)
+                    pendingKeys.removeAt(position)
                     pendingLabels.removeAt(position)
                     adapter.notifyDataSetChanged()
+                    updateButtonStates()
                     Toast.makeText(this, getString(R.string.toast_marked_as_done, appLabel), Toast.LENGTH_SHORT).show()
                 }
                 .setNegativeButton(R.string.btn_cancel, null)
@@ -73,26 +75,43 @@ class PendingAppsActivity : AppCompatActivity() {
         // Blende "Alle als neu markieren" aus - macht für "Neue Apps" keinen Sinn
         findViewById<Button>(R.id.btnMarkAllAsNew).visibility = android.view.View.GONE
 
-        // Nur "Alle löschen" Button
-        findViewById<Button>(R.id.btnRemoveAll).setOnClickListener {
-            if (pendingPkgs.isEmpty()) {
+        val btnRemoveAll = findViewById<Button>(R.id.btnRemoveAll)
+        val btnClose = findViewById<Button>(R.id.btnClose)
+
+        // Aktualisiere Button-Status basierend auf Liste
+        updateButtonStates()
+
+        // "Alle löschen" Button
+        btnRemoveAll.setOnClickListener {
+            if (pendingKeys.isEmpty()) {
                 Toast.makeText(this, R.string.toast_no_apps_available, Toast.LENGTH_SHORT).show()
                 return@setOnClickListener
             }
 
             AlertDialog.Builder(this)
                 .setTitle(R.string.dialog_delete_all_title)
-                .setMessage(getString(R.string.dialog_delete_all_message, pendingPkgs.size))
+                .setMessage(getString(R.string.dialog_delete_all_message, pendingKeys.size))
                 .setPositiveButton(R.string.btn_yes) { _, _ ->
                     prefs.edit().putStringSet(pendingKey, setOf()).apply()
-                    pendingPkgs.clear()
+                    pendingKeys.clear()
                     pendingLabels.clear()
                     adapter.notifyDataSetChanged()
+                    updateButtonStates()
                     Toast.makeText(this, R.string.toast_all_apps_deleted, Toast.LENGTH_SHORT).show()
                 }
                 .setNegativeButton(R.string.btn_cancel, null)
                 .show()
         }
+
+        // "Schließen" Button
+        btnClose.setOnClickListener {
+            finish()
+        }
+    }
+
+    private fun updateButtonStates() {
+        val btnRemoveAll = findViewById<Button>(R.id.btnRemoveAll)
+        btnRemoveAll.isEnabled = pendingKeys.isNotEmpty()
     }
 
     private fun openAppSettings(pkg: String) {
@@ -104,7 +123,10 @@ class PendingAppsActivity : AppCompatActivity() {
         Toast.makeText(this, R.string.toast_choose_notification_category, Toast.LENGTH_LONG).show()
     }
 
-    private fun shouldFilterPackage(packageName: String): Boolean {
+    private fun shouldFilterPackage(key: String): Boolean {
+        // Extrahiere packageName aus key (vor dem Doppelpunkt)
+        val packageName = key.substringBefore(':')
+
         // Filtere System-UI und andere unerwünschte Apps
         val ignoredPackages = listOf(
             "com.android.systemui",
@@ -112,6 +134,26 @@ class PendingAppsActivity : AppCompatActivity() {
             "com.android.system"
         )
         return ignoredPackages.contains(packageName)
+    }
+
+    private fun getAppLabelWithChannel(pm: android.content.pm.PackageManager, key: String): String {
+        val parts = key.split(':')
+        val packageName = parts[0]
+        val channelId = if (parts.size > 1) parts[1] else null
+
+        val appName = getAppLabel(pm, packageName)
+
+        // Wenn ein channelId vorhanden ist, formatiere und zeige ihn an
+        if (channelId != null && channelId.isNotEmpty()) {
+            val formattedChannel = ChannelFormatter.formatChannelId(channelId)
+            return if (formattedChannel != null) {
+                "$appName\n($formattedChannel)"
+            } else {
+                appName
+            }
+        }
+
+        return appName
     }
 
     private fun getAppLabel(pm: android.content.pm.PackageManager, pkg: String): String {

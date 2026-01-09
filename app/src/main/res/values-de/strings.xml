@@ -92,8 +92,10 @@ Sendet eine Test-Benachrichtigung, um zu überprüfen, ob die App korrekt funkti
     <string name="onboarding_step1_description">Der Ton-Assistent hilft Ihnen, verschiedene Benachrichtigungstöne für Ihre Apps einzurichten.\n\nSo können Sie jede App an ihrem individuellen Ton erkennen.</string>
     <string name="onboarding_step2_title">Berechtigung erforderlich</string>
     <string name="onboarding_step2_description">Um Benachrichtigungen zu überwachen, benötigt die App Zugriff auf Benachrichtigungen.\n\nDer Inhalt Ihrer Benachrichtigungen wird nicht gelesen oder gespeichert.</string>
-    <string name="onboarding_step3_title">Fertig!</string>
-    <string name="onboarding_step3_description">Sie können jetzt loslegen!\n\nWenn Apps Benachrichtigungen mit Ton senden, erscheinen sie unter \"Neue Apps\". Tippen Sie darauf, um einen individuellen Ton einzustellen.</string>
+    <string name="onboarding_step3_title">Test-Benachrichtigung Berechtigung</string>
+    <string name="onboarding_step3_description">Um Test-Benachrichtigungen zu senden, benötigt die App die Berechtigung zum Senden von Benachrichtigungen.\n\nDies wird benötigt, um Ihre Sound-Einstellungen zu testen.</string>
+    <string name="onboarding_step4_title">Fertig!</string>
+    <string name="onboarding_step4_description">Sie können jetzt loslegen!\n\nWenn Apps Benachrichtigungen mit Ton senden, erscheinen sie unter \"Neue Apps\". Tippen Sie darauf, um einen individuellen Ton einzustellen.</string>
     <string name="onboarding_listener_dialog_title">Benachrichtigungszugriff gewähren</string>
     <string name="onboarding_listener_dialog_message">Bitte aktivieren Sie den Benachrichtigungszugriff für den Ton-Assistenten in den Einstellungen.</string>
     <string name="btn_next">Weiter</string>

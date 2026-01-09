@@ -62,12 +62,18 @@ class NotificationMonitorService : NotificationListenerService() {
             return
         }
 
-        // Hole channelId für Android O und höher
+        // Hole channelId für Android O und höher, oder category als Fallback
         val channelId = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             notification?.channelId
         } else {
             null
         }
+
+        // Verwende category als Fallback wenn kein channelId vorhanden ist
+        val category = notification?.category
+        val effectiveChannelId = channelId ?: category
+
+        Log.d("Piepton", "channelId: $channelId, category: $category, effectiveChannelId: $effectiveChannelId")
 
         val prefs = getSharedPreferences("notif_snd_assist_prefs", Context.MODE_PRIVATE)
         val seenApps = prefs.getStringSet("seen_apps", mutableSetOf()) ?: mutableSetOf()
@@ -75,25 +81,32 @@ class NotificationMonitorService : NotificationListenerService() {
         val pendingApps = prefs.getStringSet(pendingKey, mutableSetOf()) ?: mutableSetOf()
 
         // Speichere die Benachrichtigung in der History (letzte 5)
-        saveNotificationToHistory(packageName, channelId)
+        saveNotificationToHistory(packageName, effectiveChannelId)
 
-        if (!seenApps.contains(packageName) && !pendingApps.contains(packageName)) {
-            // App wurde noch nicht behandelt und ist nicht in pending
+        // Erstelle einen eindeutigen Key: packageName:channelId (oder category als Fallback)
+        val channelKey = if (effectiveChannelId != null) {
+            "$packageName:$effectiveChannelId"
+        } else {
+            packageName // Fallback wenn weder channelId noch category vorhanden
+        }
+
+        if (!seenApps.contains(channelKey) && !pendingApps.contains(channelKey)) {
+            // Diese App:Channel-Kombination wurde noch nicht behandelt und ist nicht in pending
             val newPending = pendingApps.toMutableSet()
-            newPending.add(packageName)
+            newPending.add(channelKey)
             prefs.edit().putStringSet(pendingKey, newPending).apply()
-            Log.i("Piepton", "Neue App in pending-Liste: $packageName")
+            Log.i("Piepton", "Neue App:Channel in pending-Liste: $channelKey")
             // Kein automatisches Öffnen mehr!
             return
         }
-        // ...bisherige Logik für eigene App kann hier noch ergänzt werden...
+        Log.d("Piepton", "App:Channel bereits bekannt: $channelKey (in seenApps: ${seenApps.contains(channelKey)}, in pendingApps: ${pendingApps.contains(channelKey)})")
     }
 
     private fun shouldIgnoreNotification(packageName: String, title: String, text: String): Boolean {
         // Ignoriere eigene App (außer Test-Benachrichtigungen)
         if (packageName == "com.rsinkwitz.notif_snd_assist") {
-            // Nur Test-Benachrichtigungen durchlassen
-            if (title == "Test-Benachrichtigung") {
+            // Nur Test-Benachrichtigungen durchlassen (Titel: "Test", Text: "Test-Benachrichtigung")
+            if (title == "Test" && text == "Test-Benachrichtigung") {
                 return false
             }
             // Alle anderen Benachrichtigungen der eigenen App ignorieren (z.B. Foreground Service)

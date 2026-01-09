@@ -1,16 +1,20 @@
 package com.rsinkwitz.notif_snd_assist
 
+import android.Manifest
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
 import android.view.View
 import android.widget.Button
 import android.widget.TextView
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.ContextCompat
 
 class OnboardingActivity : AppCompatActivity() {
 
@@ -20,6 +24,19 @@ class OnboardingActivity : AppCompatActivity() {
     private lateinit var tvStepDescription: TextView
     private lateinit var btnNext: Button
     private lateinit var btnSkip: Button
+
+    // Permission Launcher für POST_NOTIFICATIONS
+    private val notificationPermissionLauncher = registerForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        if (isGranted) {
+            // Berechtigung wurde erteilt
+            showStep(4)
+        } else {
+            // Berechtigung wurde verweigert, aber weiter machen
+            showStep(4)
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -40,6 +57,9 @@ class OnboardingActivity : AppCompatActivity() {
                     requestNotificationListenerPermission()
                 }
                 3 -> {
+                    requestPostNotificationsPermission()
+                }
+                4 -> {
                     // Onboarding abschließen
                     finishOnboarding()
                 }
@@ -71,6 +91,12 @@ class OnboardingActivity : AppCompatActivity() {
             3 -> {
                 tvStepTitle.text = getString(R.string.onboarding_step3_title)
                 tvStepDescription.text = getString(R.string.onboarding_step3_description)
+                btnNext.text = getString(R.string.btn_grant_permission)
+                btnSkip.visibility = View.VISIBLE
+            }
+            4 -> {
+                tvStepTitle.text = getString(R.string.onboarding_step4_title)
+                tvStepDescription.text = getString(R.string.onboarding_step4_description)
                 btnNext.text = getString(R.string.btn_finish)
                 btnSkip.visibility = View.GONE
             }
@@ -97,6 +123,36 @@ class OnboardingActivity : AppCompatActivity() {
         } else {
             // Permission bereits erteilt
             showStep(3)
+        }
+    }
+
+    private fun requestPostNotificationsPermission() {
+        // Nur für Android 13+ (API 33+)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            val hasPermission = ContextCompat.checkSelfPermission(
+                this,
+                Manifest.permission.POST_NOTIFICATIONS
+            ) == PackageManager.PERMISSION_GRANTED
+
+            if (!hasPermission) {
+                // Zeige Erklärung und fordere Berechtigung an
+                AlertDialog.Builder(this)
+                    .setTitle(R.string.onboarding_step3_title)
+                    .setMessage(R.string.onboarding_step3_description)
+                    .setPositiveButton(R.string.btn_grant_permission) { _, _ ->
+                        notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                    }
+                    .setNegativeButton(R.string.btn_cancel) { _, _ ->
+                        showStep(4)
+                    }
+                    .show()
+            } else {
+                // Berechtigung bereits erteilt
+                showStep(4)
+            }
+        } else {
+            // Für ältere Android-Versionen nicht benötigt
+            showStep(4)
         }
     }
 
