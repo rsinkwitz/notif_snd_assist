@@ -30,6 +30,7 @@
     <!-- Seen Apps Activity -->
     <string name="seen_apps_title">Seen Apps</string>
     <string name="dialog_action_for_app">Action for \'%s\'?</string>
+    <string name="btn_configure">Configure</string>
     <string name="btn_mark_as_new">Mark as New</string>
     <string name="btn_remove">Remove</string>
     <string name="toast_marked_as_new">\'%s\' has been marked as new</string>

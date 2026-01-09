@@ -2,6 +2,7 @@ package com.rsinkwitz.notif_snd_assist
 
 import android.app.AlertDialog
 import android.content.Context
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Bundle
 import android.widget.ArrayAdapter
@@ -47,37 +48,53 @@ class DialogSeenAppsActivity : AppCompatActivity() {
         listView.setOnItemClickListener { _, _, position, _ ->
             val key = seenKeys[position]
             val appLabel = seenApps[position].substringBefore('\n')
+            val packageName = key.substringBefore(':')
 
+            // Zeige Dialog mit vier Optionen: Konfigurieren, Als neu markieren, Entfernen, Abbrechen
+            val options = arrayOf(
+                getString(R.string.btn_configure),
+                getString(R.string.btn_mark_as_new),
+                getString(R.string.btn_remove),
+                getString(R.string.btn_cancel)
+            )
 
-            // Zeige Dialog mit drei Optionen: Als neu markieren, Entfernen, Abbrechen
             AlertDialog.Builder(this)
                 .setTitle(getString(R.string.dialog_action_for_app, appLabel))
-                .setMessage(getString(R.string.dialog_action_for_app, appLabel))
-                .setPositiveButton(R.string.btn_mark_as_new) { _, _ ->
-                    // Verschiebe von "seen" zu "pending"
-                    seenKeys.removeAt(position)
-                    prefs.edit().putStringSet(seenAppsKey, seenKeys.toSet()).apply()
+                .setItems(options) { _, which ->
+                    when (which) {
+                        0 -> {
+                            // Konfigurieren: Öffne App-Einstellungen
+                            openAppSettings(packageName)
+                        }
+                        1 -> {
+                            // Als neu markieren: Verschiebe von "seen" zu "pending"
+                            seenKeys.removeAt(position)
+                            prefs.edit().putStringSet(seenAppsKey, seenKeys.toSet()).apply()
 
-                    val pendingApps = prefs.getStringSet(pendingKey, setOf())?.toMutableSet() ?: mutableSetOf()
-                    pendingApps.add(key)
-                    prefs.edit().putStringSet(pendingKey, pendingApps).apply()
+                            val pendingApps = prefs.getStringSet(pendingKey, setOf())?.toMutableSet() ?: mutableSetOf()
+                            pendingApps.add(key)
+                            prefs.edit().putStringSet(pendingKey, pendingApps).apply()
 
-                    seenApps.removeAt(position)
-                    adapter.notifyDataSetChanged()
-                    updateButtonStates()
-                    Toast.makeText(this, getString(R.string.toast_marked_as_new, appLabel), Toast.LENGTH_SHORT).show()
+                            seenApps.removeAt(position)
+                            adapter.notifyDataSetChanged()
+                            updateButtonStates()
+                            Toast.makeText(this, getString(R.string.toast_marked_as_new, appLabel), Toast.LENGTH_SHORT).show()
+                        }
+                        2 -> {
+                            // Entfernen: Entferne aus "seen" ohne zu "pending" zu verschieben
+                            seenKeys.removeAt(position)
+                            prefs.edit().putStringSet(seenAppsKey, seenKeys.toSet()).apply()
+
+                            seenApps.removeAt(position)
+                            adapter.notifyDataSetChanged()
+                            updateButtonStates()
+                            Toast.makeText(this, getString(R.string.toast_removed, appLabel), Toast.LENGTH_SHORT).show()
+                        }
+                        3 -> {
+                            // Abbrechen: Dialog schließen (nichts tun)
+                        }
+                    }
                 }
-                .setNegativeButton(R.string.btn_remove) { _, _ ->
-                    // Entferne aus "seen" ohne zu "pending" zu verschieben
-                    seenKeys.removeAt(position)
-                    prefs.edit().putStringSet(seenAppsKey, seenKeys.toSet()).apply()
-
-                    seenApps.removeAt(position)
-                    adapter.notifyDataSetChanged()
-                    updateButtonStates()
-                    Toast.makeText(this, getString(R.string.toast_removed, appLabel), Toast.LENGTH_SHORT).show()
-                }
-                .setNeutralButton(R.string.btn_cancel, null)
                 .show()
         }
 
@@ -142,6 +159,15 @@ class DialogSeenAppsActivity : AppCompatActivity() {
         btnClose.setOnClickListener {
             finish()
         }
+    }
+
+    private fun openAppSettings(pkg: String) {
+        val intent = Intent(android.provider.Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+            data = android.net.Uri.parse("package:$pkg")
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        }
+        startActivity(intent)
+        Toast.makeText(this, R.string.toast_choose_notification_category, Toast.LENGTH_LONG).show()
     }
 
     private fun updateButtonStates() {

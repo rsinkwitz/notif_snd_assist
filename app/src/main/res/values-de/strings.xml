@@ -30,6 +30,7 @@
     <!-- Seen Apps Activity -->
     <string name="seen_apps_title">Gesehene Apps</string>
     <string name="dialog_action_for_app">Aktion für \'%s\'?</string>
+    <string name="btn_configure">Konfigurieren</string>
     <string name="btn_mark_as_new">Als neu markieren</string>
     <string name="btn_remove">Entfernen</string>
     <string name="toast_marked_as_new">\'%s\' wurde als neu markiert</string>
